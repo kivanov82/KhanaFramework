@@ -1,5 +1,5 @@
-var KharnaToken = artifacts.require("KharnaToken");
+var KhanaToken = artifacts.require("KhanaToken");
 
 module.exports = function(deployer) {
-  deployer.deploy(KharnaToken);
+  deployer.deploy(KhanaToken);
 };
