@@ -76,16 +76,17 @@ class App extends Component {
     }
 
     updateState = async () => {
+        let web3 = this.state.web3
         let khanaTokenInstance = this.state.contract
         let accounts = this.state.accounts
         var supply
         var balance
 
         khanaTokenInstance.getSupply.call().then((newSupply) => {
-            supply = newSupply.toString(10);
+            supply = (web3.fromWei(newSupply, 'ether')).toString(10);
             return khanaTokenInstance.balanceOf(accounts[0])
         }).then((newBalance) => {
-            balance = newBalance.toString(10);
+            balance = (web3.fromWei(newBalance, 'ether')).toString(10);
             return khanaTokenInstance.mintingFinished()
         }).then((mintingDisabled) => {
             return this.setState({totalSupply: supply, mintingEnabled: !mintingDisabled, addressBalance: balance, currentAddress: accounts[0], status: '', isLoading: false})
@@ -94,9 +95,12 @@ class App extends Component {
 
     awardTokens =(event) => {
         event.preventDefault();
+
+        let web3 = this.state.web3
+
         // Set state
         let address = event.target.address.value
-        let amount = event.target.amount.value
+        let amount = web3.toWei(event.target.amount.value, 'ether')
         let reason = event.target.reason.value
         this.setState({awardAmount: amount, awardReason: reason, status: 'Processing...', isLoading: true});
 

@@ -5,9 +5,9 @@ import 'openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
 contract KhanaToken is MintableToken {
 
     string public name = "KhanaToken";
-    string public symbol = "KRNA";
-    uint8 public decimals = 2;
-    uint public INITIAL_SUPPLY = 500;
+    string public symbol = "KHNA";
+    uint8 public decimals = 18;
+    uint public INITIAL_SUPPLY = 500000000000000000000;
 
     event Awarded(address accountAddress, uint amount);
     event MintingEnabled();
