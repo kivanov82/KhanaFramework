@@ -9,20 +9,20 @@ contract KhanaToken is MintableToken {
     uint8 public decimals = 18;
     uint public INITIAL_SUPPLY = 500000000000000000000;
 
-    event Awarded(address accountAddress, uint amount);
+    event Awarded(address indexed accountAddress, uint amount, string ipfsHash);
     event MintingEnabled();
 
     constructor() public {
         mint(msg.sender, INITIAL_SUPPLY);
     }
 
-    function award(address _account, uint256 _amount) public {
+    function award(address _account, uint256 _amount, string ipfsHash) public {
         mint(_account, _amount);
-        emit Awarded(_account, _amount);
+        emit Awarded(_account, _amount, ipfsHash);
     }
 
     // TODO: - Should only allow 'admins' to stop and resume
-
+    // override onlyOwner in mintableToken
     function emergencyStop() public returns (bool) {
         return finishMinting();
     }

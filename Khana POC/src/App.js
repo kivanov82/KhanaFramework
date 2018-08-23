@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import KhanaToken from '../build/contracts/KhanaToken.json'
 import getWeb3 from './utils/getWeb3'
+import ipfs from './utils/ipfs';
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -24,6 +25,7 @@ class App extends Component {
             currentAddress: null,
             awardAmount: 0,
             awardReason:'',
+            latestIpfsHash: null,
             status:'waiting...',
             isLoading: false
         }
@@ -69,8 +71,28 @@ class App extends Component {
             }).then((instanceSymbol) => {
                 symbol = instanceSymbol
             }).then(() => {
-                this.setState({ contract: instance, accounts: accounts, tokenName: name, tokenSymbol: symbol })
-                this.updateState();
+                 let awardEventsAll = instance.Awarded({}, {
+                     fromBlock: 0,
+                     toBlock: 'latest'
+                 })
+
+                 awardEventsAll.get((err, result) => {
+                     console.log(err)
+                     console.log(result)
+
+                     let ipfsEventLogged = result[result.length - 1]
+
+                     if (ipfsEventLogged != null) {
+                         this.setState({ contract: instance, accounts: accounts, tokenName: name, tokenSymbol: symbol, latestIpfsHash: ipfsEventLogged.args.ipfsHash })
+                     } else {
+                         this.setState({ contract: instance, accounts: accounts, tokenName: name, tokenSymbol: symbol })
+                     }
+                     this.updateState();
+                 })
+            }).then(() => {
+
+            }).then(() => {
+
             })
         })
     }
@@ -104,16 +126,63 @@ class App extends Component {
         let reason = event.target.reason.value
         this.setState({awardAmount: amount, awardReason: reason, status: 'Processing...', isLoading: true});
 
-        // Make contract changes
-        let khanaTokenInstance = this.state.contract
-        let accounts = this.state.accounts
+        let getIpfsFile = new Promise((ipfsResult) => {
+            let latestIpfsHash = this.state.latestIpfsHash
+            // If there is no existing hash, then we are running for first time
+            if (!latestIpfsHash) {
+                //Set up IPFS details
+                let newContents = Date.now() + ', ' + address + ', ' + amount + ', ' + reason
 
-        khanaTokenInstance.award(address, amount, {from: accounts[0]}).then((result) => {
-            this.setState({status: 'Waiting for transaction to confirm...'});
-            // watch for tx completion
-            khanaTokenInstance.Awarded({fromBlock: 'latest'}, (err, response) => {
-                console.log('Tx hash: ' + response.transactionHash);
-                this.updateState();
+                let ipfsContent = {
+                    path: '/' + this.state.tokenName,
+                    content: Buffer.from(newContents)
+                }
+
+                // Write description to IPFS, return hash
+                ipfsResult(ipfs.add(ipfsContent))
+            } else {
+                // Get most recent version of logs first
+                ipfs.files.cat('/ipfs/' + this.state.latestIpfsHash).then((file) => {
+                    let previousContents = file.toString('utf8');
+                    let newContents = Date.now() + ', ' + address + ', ' + amount + ', ' + reason + '\n' + previousContents
+
+                    //Set up IPFS details
+                    let ipfsContent = {
+                        path: '/' + this.state.tokenName,
+                        content: Buffer.from(newContents)
+                    }
+
+                    // Write description to IPFS, return hash
+                    ipfsResult(ipfs.add(ipfsContent))
+                })
+            }
+        })
+
+        getIpfsFile.then((ipfsResult) => {
+
+            // Then store the recent tx and record on blockchain (and events log)
+            console.log(ipfsResult[0].hash)
+            let ipfsHash = ipfsResult[0].hash
+
+            // Make contract changes
+            let khanaTokenInstance = this.state.contract
+            let accounts = this.state.accounts
+
+            console.log('sending tx')
+            khanaTokenInstance.award(address, amount, ipfsHash, {from: accounts[0]}).then((result) => {
+                this.setState({status: 'Waiting for transaction to confirm...'});
+
+                // TODO: - if running on private blockchain / dev (ganache or truffle dev), the latest block may already have an event (not the pending block to be mined), therefore two events will be detected
+
+                // watch for tx completion
+                khanaTokenInstance.Awarded({fromBlock: 'latest'}, (err, response) => {
+                    console.log('Tx hash: ' + response.transactionHash);
+                    console.log(response);
+
+                    // Update latest ipfsHash
+                    this.setState({latestIpfsHash: ipfsHash})
+                    this.updateState();
+                })
             })
         })
     };
