@@ -28,7 +28,8 @@ class App extends Component {
                     awardedTo: null,
                     amount: 0,
                     ipfsHash: '',
-                    ethTxHash: ''
+                    ethTxHash: '',
+                    reason: ''
                 }]
             },
             user: {
@@ -173,6 +174,8 @@ class App extends Component {
 
             return this.setState(state)
         })
+
+        document.getElementById("awardButton").disabled = false;
     }
 
     updateLoadingMessage = async(message) => {
@@ -184,6 +187,7 @@ class App extends Component {
 
     awardTokens =(event) => {
         event.preventDefault();
+        document.getElementById("awardButton").disabled = true;
 
         let web3 = this.state.web3
 
@@ -191,6 +195,12 @@ class App extends Component {
         let address = event.target.address.value
         let amount = web3.toWei(event.target.amount.value, 'ether')
         let reason = event.target.reason.value
+
+        if (address.length === 0 || amount.length === 0 || reason.length === 0) {
+            this.updateState('All details must be filled in to award tokens')
+            return
+        }
+
         this.updateLoadingMessage('Processing')
 
         let getIpfsFile = new Promise((ipfsResult) => {
@@ -342,6 +352,30 @@ class App extends Component {
         })
     }
 
+    getIpfsReasons = async(ipfsHash) => {
+        this.updateLoadingMessage('Loading IPFS reasons...')
+
+        ipfs.files.cat('/ipfs/' + this.state.contract.latestIpfsHash, (err, file) => {
+            if (err) {
+                console.log(err)
+            }
+
+            // Get the raw text of the IPFS file, split it per 'new lines', split per comma, and determine if the transaction is relevant for the user's address
+            let fileString = file.toString('utf8')
+            let arrayOfTransactionReasons = fileString.split('\n').map(transaction => {
+                let elements = transaction.split(', ')
+                return elements[3]
+            })
+
+            let contractState = this.state.contract
+            contractState.ipfsLogHistory.forEach( (value, index) => {
+                value.reason = arrayOfTransactionReasons[index]
+            })
+            this.setState({contract: contractState})
+            this.updateState('IPFS reasons loaded')
+        })
+    }
+
     render() {
         const isLoading = this.state.app.isLoading
         const hasStatusMessage = this.state.app.status
@@ -350,7 +384,17 @@ class App extends Component {
         const transactionList = this.state.contract.ipfsLogHistory.sort((a, b) => {
             return a.blockNumber < b.blockNumber ? 1 : -1
         }).map(tx => {
-            return <li key={tx.ethTxHash}> {tx.minter} minted {tx.amount} for {tx.awardedTo} in block number {tx.blockNumber} <a href={"https://gateway.ipfs.io/ipfs/" + tx.ipfsHash} target="_blank">(audit)</a></li>;
+            const reason = tx.reason != null ? '(Reason: ' + tx.reason + ')' : ''
+            // Admins see list of all transactions, normal users see transactions relevant to them
+            if (this.state.user.isAdmin) {
+                return <li key={tx.ethTxHash}> {tx.minter} minted {tx.amount} {this.state.contract.tokenSymbol} for user {tx.awardedTo} in block number {tx.blockNumber} {reason} <a href={"https://gateway.ipfs.io/ipfs/" + tx.ipfsHash} target="_blank">(audit)</a></li>
+            } else {
+                if (tx.awardedTo === this.state.user.currentAddress) {
+                    return <li key={tx.ethTxHash}> You were awarded {tx.amount} {this.state.contract.tokenSymbol} from {tx.minter} in block number {tx.blockNumber} {reason} <a href={"https://gateway.ipfs.io/ipfs/" + tx.ipfsHash} target="_blank">(audit)</a></li>
+                } else {
+                    return null
+                }
+            }
         })
 
         return (
@@ -387,7 +431,7 @@ class App extends Component {
                 <label> Address: <input type="text" name="address"/></label>
                 <label> Amount: <input type="number" name="amount"/></label>
                 <label> Reason: <input type="text" name="reason" /></label>
-                <input type="submit" value=" Award " />
+                <input type="submit" value=" Award " id="awardButton" />
                 </form>
 
                 <h2>Admin Tools</h2>
@@ -412,17 +456,19 @@ class App extends Component {
                 <label> Address: <input type="text" name="address"/></label>
                 <input type="submit" value=" Remove Admin " />
                 </form>
-
-                <h3>Minting transaction history</h3>
-                <ul> { transactionList.length > 0 ? transactionList : 'No transactions available' } </ul>
                 </div>
             }
 
             { /* Everything else */}
 
             <h1>User Dashboard</h1>
-            <h2>Your information</h2>
-            <p>Your balance: {this.state.user.tokenBalance}</p>
+
+            <h3>Minting transaction history</h3>
+            <button onClick={this.getIpfsReasons}> Load reasons from IPFS </button>
+            <ul> { transactionList.length > 0 ? transactionList : 'No transactions available' } </ul>
+
+            <h3>Your information</h3>
+            <p>Your balance: {this.state.user.tokenBalance}  {this.state.contract.tokenSymbol}</p>
             <p>Your address: {this.state.user.currentAddress}</p>
             <p>You have {((this.state.user.tokenBalance / this.state.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
 
