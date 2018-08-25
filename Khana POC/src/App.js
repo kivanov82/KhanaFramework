@@ -35,6 +35,7 @@ class App extends Component {
                 accounts: null,
                 currentAddress: null,
                 tokenBalance: 0,
+                isAdmin: false
             },
             app: {
                 status:'waiting...',
@@ -83,67 +84,67 @@ class App extends Component {
             }).then((instanceSymbol) => {
                 symbol = instanceSymbol
             }).then(() => {
-                 let awardEventsAll = contractInstance.Awarded({}, {
-                     fromBlock: 0,
-                     toBlock: 'latest'
-                 })
+                return contractInstance.checkIfAdmin.call(accounts[0])
+            }).then((isAdmin) => {
 
-                 awardEventsAll.get((err, result) => {
+                let awardEventsAll = contractInstance.Awarded({}, {
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                })
 
-                     if (error) {
-                         // TODO: - do something
-                     }
+                awardEventsAll.get((err, result) => {
 
-                     console.log(result)
-                     let logHistory = result.map((log) => {
-                         return {
-                             blockNumber: log.blockNumber,
-                             minter: log.args.minter,
-                             awardedTo: log.args.awardedTo,
-                             amount: (this.state.web3.fromWei(log.args.amount, 'ether')).toString(10),
-                             ipfsHash: log.args.ipfsHash,
-                             ethTxHash: log.transactionHash
-                         }
-                     })
+                    if (error) {
+                        // TODO: - do something
+                    }
 
-                     let ipfsEventLogged = result[result.length - 1]
+                    let logHistory = result.map((log) => {
+                        return {
+                            blockNumber: log.blockNumber,
+                            minter: log.args.minter,
+                            awardedTo: log.args.awardedTo,
+                            amount: (this.state.web3.fromWei(log.args.amount, 'ether')).toString(10),
+                            ipfsHash: log.args.ipfsHash,
+                            ethTxHash: log.transactionHash
+                        }
+                    })
 
-                     // Get latest IPFS hash if it exists
+                    let ipfsEventLogged = result[result.length - 1]
 
-                     if (ipfsEventLogged != null) {
-                         this.setState({
-                             contract: {
-                                 instance: contractInstance,
-                                 tokenName: name,
-                                 tokenSymbol: symbol,
-                                 latestIpfsHash: ipfsEventLogged.args.ipfsHash,
-                                 ipfsLogHistory: logHistory
-                             },
-                             user: {
-                                 accounts: accounts
-                             }
-                         })
-                     } else {
+                    // Get latest IPFS hash if it exists
 
-                         // No IPFS hash exists (i.e. we're just setting up the contract)
-                         this.setState({
-                             contract: {
-                                 instance: contractInstance,
-                                 tokenName: name,
-                                 tokenSymbol: symbol,
-                                 ipfsLogHistory: []
-                             },
-                             user: {
-                                 accounts: accounts
-                             }
-                         })
-                     }
-                     this.updateState();
-                 })
-            }).then(() => {
+                    if (ipfsEventLogged != null) {
+                        this.setState({
+                            contract: {
+                                instance: contractInstance,
+                                tokenName: name,
+                                tokenSymbol: symbol,
+                                latestIpfsHash: ipfsEventLogged.args.ipfsHash,
+                                ipfsLogHistory: logHistory
+                            },
+                            user: {
+                                accounts: accounts,
+                                isAdmin: isAdmin
+                            }
+                        })
+                    } else {
 
-            }).then(() => {
-
+                        // No IPFS hash exists (i.e. we're just setting up the contract)
+                        this.setState({
+                            contract: {
+                                instance: contractInstance,
+                                tokenName: name,
+                                tokenSymbol: symbol,
+                                ipfsLogHistory: []
+                            },
+                            user: {
+                                accounts: accounts,
+                                isAdmin: isAdmin
+                            }
+                        })
+                    }
+                    this.updateState();
+                })
             })
         })
     }
@@ -231,7 +232,6 @@ class App extends Component {
         getIpfsFile.then((ipfsResult) => {
 
             // Then store the recent tx and record on blockchain (and events log)
-            console.log(ipfsResult[0].hash)
             let ipfsHash = ipfsResult[0].hash
             this.updateLoadingMessage('Entry added to IPFS file successfully (with IPFS hash: ' + ipfsHash + '). Now adding IPFS hash permanently to minting transaction on ethereum...')
 
@@ -241,16 +241,12 @@ class App extends Component {
 
             khanaTokenInstance.award(address, amount, ipfsHash, {from: accounts[0]}).then((txResult) => {
 
-                console.log(txResult)
-                console.log(txResult.receipt.blockNumber)
                 this.updateLoadingMessage('Waiting for transaction to confirm...')
 
                 let awardedEvent = khanaTokenInstance.Awarded({fromBlock: 'latest'}, (err, response) => {
 
                     // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
                     if (response.blockNumber >= txResult.receipt.blockNumber) {
-
-                        console.log('Tx hash: ' + response.transactionHash);
 
                         // Update latest ipfsHash and history
                         let contractState = this.state.contract
@@ -275,6 +271,7 @@ class App extends Component {
     }
 
     tokenEmergencyStop = async () => {
+        event.preventDefault();
         this.updateLoadingMessage('Processing emergency stop...')
 
         let khanaTokenInstance = this.state.contract.instance
@@ -290,6 +287,7 @@ class App extends Component {
     }
 
     tokenEnableMinting = async () => {
+        event.preventDefault();
         this.updateLoadingMessage('Re-enabling token minting...')
 
         let khanaTokenInstance = this.state.contract.instance
@@ -304,6 +302,46 @@ class App extends Component {
         })
     }
 
+    checkAdmin = async(event) => {
+        event.preventDefault();
+        this.updateLoadingMessage('Checking if address is an admin...')
+
+        let khanaTokenInstance = this.state.contract.instance
+        khanaTokenInstance.checkIfAdmin(event.target.address.value).then((isAdmin) => {
+            this.updateState('User ' + (isAdmin ? 'is ' : 'is not ') + 'an admin')
+        })
+    }
+
+    addAdmin = async(event) => {
+        event.preventDefault();
+        this.updateLoadingMessage('Adding user as an admin...')
+
+        let khanaTokenInstance = this.state.contract.instance
+        let accounts = this.state.user.accounts
+        khanaTokenInstance.addAdmin(event.target.address.value, {from: accounts[0]}).then(() => {
+            this.updateLoadingMessage('Waiting for transaction to confirm')
+
+            khanaTokenInstance.AdminAdded({fromBlock: 'latest'}, (err, response) => {
+                this.updateState('User added as an admin');
+            })
+        })
+    }
+
+    removeAdmin = async(event) => {
+        event.preventDefault();
+        this.updateLoadingMessage('Removing user as an admin...')
+
+        let khanaTokenInstance = this.state.contract.instance
+        let accounts = this.state.user.accounts
+        khanaTokenInstance.removeAdmin(event.target.address.value, {from: accounts[0], gas: 100000}).then(() => {
+            this.updateLoadingMessage('Waiting for transaction to confirm')
+
+            khanaTokenInstance.AdminRemoved({fromBlock: 'latest'}, (err, response) => {
+                this.updateState('User removed as an admin');
+            })
+        })
+    }
+
     render() {
         const isLoading = this.state.app.isLoading
         const hasStatusMessage = this.state.app.status
@@ -312,19 +350,19 @@ class App extends Component {
         const transactionList = this.state.contract.ipfsLogHistory.sort((a, b) => {
             return a.blockNumber < b.blockNumber ? 1 : -1
         }).map(tx => {
-            return <li key={tx.ethTxHash}> {tx.minter} minted {tx.amount} for {tx.awardedTo} in block number {tx.blockNumber}</li>;
+            return <li key={tx.ethTxHash}> {tx.minter} minted {tx.amount} for {tx.awardedTo} in block number {tx.blockNumber} <a href={"https://gateway.ipfs.io/ipfs/" + tx.ipfsHash} target="_blank">(audit)</a></li>;
         })
 
         return (
             <div className="App">
-            <nav className="navbar pure-menu pure-menu-horizontal">
+
+            <nav className={ this.state.user.isAdmin ? "navbar-admin pure-menu pure-menu-horizontal" : "navbar pure-menu pure-menu-horizontal" }>
             <a href="#" className="pure-menu-heading pure-menu-link">Khana: a tokenized framework for community building</a>
             </nav>
 
             <main className="container">
             <div className="pure-g">
             <div className="pure-u-1-1">
-            <h1>Admin abilities</h1>
 
             {isLoading &&
                 <div>
@@ -338,26 +376,51 @@ class App extends Component {
                 </div>
             }
 
-            <h2>Award tokens</h2>
-            {/* TODO: - form validation */}
-            <form onSubmit={this.awardTokens}>
+            { /* Admin section */}
+            {this.state.user.isAdmin &&
+                <div>
+                <h1>Admin abilities</h1>
+
+                <h2>Award tokens</h2>
+                {/* TODO: - form validation */}
+                <form onSubmit={this.awardTokens}>
                 <label> Address: <input type="text" name="address"/></label>
                 <label> Amount: <input type="number" name="amount"/></label>
                 <label> Reason: <input type="text" name="reason" /></label>
                 <input type="submit" value=" Award " />
-            </form>
+                </form>
 
-            <h2>Admin Settings</h2>
-            {mintingEnabled ? (
-                <button onClick={this.tokenEmergencyStop}> Activate Emergency Minting Stop </button>
-            ) : (
-                <button onClick={this.tokenEnableMinting}> Re-enable minting </button>
-            )}
+                <h2>Admin Tools</h2>
+                {mintingEnabled ? (
+                    <button onClick={this.tokenEmergencyStop}> Activate Emergency Minting Stop </button>
+                ) : (
+                    <button onClick={this.tokenEnableMinting}> Re-enable minting </button>
+                )}
+                <p></p>
 
-            <h3>Minting transaction history</h3>
-            <ul> { transactionList } </ul>
+                <form onSubmit={this.checkAdmin}>
+                <label> Address: <input type="text" name="address"/></label>
+                <input type="submit" value=" Check if admin " />
+                </form>
 
-            <h1>Dashboard</h1>
+                <form onSubmit={this.addAdmin}>
+                <label> Address: <input type="text" name="address"/></label>
+                <input type="submit" value=" Add Admin " />
+                </form>
+
+                <form onSubmit={this.removeAdmin}>
+                <label> Address: <input type="text" name="address"/></label>
+                <input type="submit" value=" Remove Admin " />
+                </form>
+
+                <h3>Minting transaction history</h3>
+                <ul> { transactionList.length > 0 ? transactionList : 'No transactions available' } </ul>
+                </div>
+            }
+
+            { /* Everything else */}
+
+            <h1>User Dashboard</h1>
             <h2>Your information</h2>
             <p>Your balance: {this.state.user.tokenBalance}</p>
             <p>Your address: {this.state.user.currentAddress}</p>
