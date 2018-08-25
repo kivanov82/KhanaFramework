@@ -9,6 +9,7 @@ contract KhanaToken is MintableToken {
     uint8 public decimals = 18;
     uint public INITIAL_SUPPLY = 500000000000000000000;
 
+    // We emit an event when tokens have been awarded to someone, including the updated IPFS hash of the audit trail (which includes date, address, amount, and reason for awarding)
     event Awarded(address indexed accountAddress, uint amount, string ipfsHash);
     event MintingEnabled();
 

@@ -15,19 +15,23 @@ class App extends Component {
 
         this.state = {
             web3: null,
-            contract: null,
-            accounts: null,
-            tokenName: '',
-            tokenSymbol: '',
-            totalSupply: 0,
-            mintingEnabled: null,
-            addressBalance: 0,
-            currentAddress: null,
-            awardAmount: 0,
-            awardReason:'',
-            latestIpfsHash: null,
-            status:'waiting...',
-            isLoading: false
+            contract: {
+                instance: null,
+                tokenName: '',
+                tokenSymbol: '',
+                totalSupply: 0,
+                mintingEnabled: null,
+                latestIpfsHash: null,
+            },
+            user: {
+                accounts: null,
+                currentAddress: null,
+                tokenBalance: 0,
+            },
+            app: {
+                status:'waiting...',
+                isLoading: false,
+            }
         }
     }
 
@@ -53,25 +57,25 @@ class App extends Component {
         const contract = require('truffle-contract')
         const khanaToken = contract(KhanaToken)
         khanaToken.setProvider(this.state.web3.currentProvider)
-        var instance;
+        var contractInstance;
         var name;
         var symbol;
 
-        this.setState({isLoading: true})
+        this.setState({app: { status: 'Loading from blockchain', isLoading: true}})
 
         this.state.web3.eth.getAccounts((error, accounts) => {
             khanaToken.deployed().then((khanaInstance) => {
-                instance = khanaInstance
+                contractInstance = khanaInstance
             }).then(() => {
-                return instance.name()
+                return contractInstance.name()
             }).then((instanceName) => {
                 name = instanceName
             }).then(() => {
-                return instance.symbol()
+                return contractInstance.symbol()
             }).then((instanceSymbol) => {
                 symbol = instanceSymbol
             }).then(() => {
-                 let awardEventsAll = instance.Awarded({}, {
+                 let awardEventsAll = contractInstance.Awarded({}, {
                      fromBlock: 0,
                      toBlock: 'latest'
                  })
@@ -79,13 +83,33 @@ class App extends Component {
                  awardEventsAll.get((err, result) => {
                      console.log(err)
                      console.log(result)
-
                      let ipfsEventLogged = result[result.length - 1]
 
+                     // Get latest IPFS hash if it exists
+
                      if (ipfsEventLogged != null) {
-                         this.setState({ contract: instance, accounts: accounts, tokenName: name, tokenSymbol: symbol, latestIpfsHash: ipfsEventLogged.args.ipfsHash })
+                         this.setState({
+                             contract: {
+                                 instance: contractInstance,
+                                 tokenName: name,
+                                 tokenSymbol: symbol,
+                                 latestIpfsHash: ipfsEventLogged.args.ipfsHash
+                             },
+                             user: {
+                                 accounts: accounts
+                             }
+                         })
                      } else {
-                         this.setState({ contract: instance, accounts: accounts, tokenName: name, tokenSymbol: symbol })
+                         this.setState({
+                             contract: {
+                                 instance: contractInstance,
+                                 tokenName: name,
+                                 tokenSymbol: symbol,
+                             },
+                             user: {
+                                 accounts: accounts
+                             }
+                         })
                      }
                      this.updateState();
                  })
@@ -97,10 +121,10 @@ class App extends Component {
         })
     }
 
-    updateState = async () => {
+    updateState = async (message) => {
         let web3 = this.state.web3
-        let khanaTokenInstance = this.state.contract
-        let accounts = this.state.accounts
+        let khanaTokenInstance = this.state.contract.instance
+        let accounts = this.state.user.accounts
         var supply
         var balance
 
@@ -111,8 +135,23 @@ class App extends Component {
             balance = (web3.fromWei(newBalance, 'ether')).toString(10);
             return khanaTokenInstance.mintingFinished()
         }).then((mintingDisabled) => {
-            return this.setState({totalSupply: supply, mintingEnabled: !mintingDisabled, addressBalance: balance, currentAddress: accounts[0], status: '', isLoading: false})
+            let state = this.state
+            state.contract.totalSupply = supply
+            state.contract.mintingEnabled = !mintingDisabled
+            state.user.currentAddress = accounts[0]
+            state.user.tokenBalance = balance
+            state.app.status = message ? message : ''
+            state.app.isLoading = false
+
+            return this.setState(state)
         })
+    }
+
+    updateLoadingMessage = async(message) => {
+        let appState = this.state.app
+        appState.status = message
+        appState.isLoading = true
+        this.setState({ app: appState })
     }
 
     awardTokens =(event) => {
@@ -124,33 +163,37 @@ class App extends Component {
         let address = event.target.address.value
         let amount = web3.toWei(event.target.amount.value, 'ether')
         let reason = event.target.reason.value
-        this.setState({awardAmount: amount, awardReason: reason, status: 'Processing...', isLoading: true});
+        this.updateLoadingMessage('Processing')
 
         let getIpfsFile = new Promise((ipfsResult) => {
-            let latestIpfsHash = this.state.latestIpfsHash
-            // If there is no existing hash, then we are running for first time
+            let latestIpfsHash = this.state.contract.latestIpfsHash
+            // If there is no existing hash, then we are running for first time and need to create log file on IPFS
             if (!latestIpfsHash) {
                 //Set up IPFS details
                 let newContents = Date.now() + ', ' + address + ', ' + amount + ', ' + reason
 
                 let ipfsContent = {
-                    path: '/' + this.state.tokenName,
+                    path: '/' + this.state.contract.tokenName,
                     content: Buffer.from(newContents)
                 }
+
+                this.updateLoadingMessage('Creating inital IPFS file...')
 
                 // Write description to IPFS, return hash
                 ipfsResult(ipfs.add(ipfsContent))
             } else {
                 // Get most recent version of logs first
-                ipfs.files.cat('/ipfs/' + this.state.latestIpfsHash).then((file) => {
+                ipfs.files.cat('/ipfs/' + this.state.contract.latestIpfsHash).then((file) => {
                     let previousContents = file.toString('utf8');
                     let newContents = Date.now() + ', ' + address + ', ' + amount + ', ' + reason + '\n' + previousContents
 
                     //Set up IPFS details
                     let ipfsContent = {
-                        path: '/' + this.state.tokenName,
+                        path: '/' + this.state.contract.tokenName,
                         content: Buffer.from(newContents)
                     }
+
+                    this.updateLoadingMessage('Adding details to IPFS file...')
 
                     // Write description to IPFS, return hash
                     ipfsResult(ipfs.add(ipfsContent))
@@ -163,14 +206,14 @@ class App extends Component {
             // Then store the recent tx and record on blockchain (and events log)
             console.log(ipfsResult[0].hash)
             let ipfsHash = ipfsResult[0].hash
+            this.updateLoadingMessage('Entry added to IPFS file successfully (with IPFS hash: ' + ipfsHash + ') \nNow adding IPFS hash permanently to minting transaction on ethereum...')
 
             // Make contract changes
-            let khanaTokenInstance = this.state.contract
-            let accounts = this.state.accounts
+            let khanaTokenInstance = this.state.contract.instance
+            let accounts = this.state.user.accounts
 
-            console.log('sending tx')
             khanaTokenInstance.award(address, amount, ipfsHash, {from: accounts[0]}).then((result) => {
-                this.setState({status: 'Waiting for transaction to confirm...'});
+                this.updateLoadingMessage('Waiting for transaction to confirm...')
 
                 // TODO: - if running on private blockchain / dev (ganache or truffle dev), the latest block may already have an event (not the pending block to be mined), therefore two events will be detected
 
@@ -180,46 +223,49 @@ class App extends Component {
                     console.log(response);
 
                     // Update latest ipfsHash
-                    this.setState({latestIpfsHash: ipfsHash})
-                    this.updateState();
+                    let contractState = this.state.contract
+                    contractState.latestIpfsHash = ipfsHash
+                    this.setState({ contract: contractState })
+                    this.updateState('Transaction confirmed with hash: ' + response.transactionHash);
                 })
             })
         })
     };
 
     tokenEmergencyStop = async () => {
-        this.setState({status: 'Processing...', isLoading: true});
+        this.updateLoadingMessage('Processing emergency stop...')
 
-        let khanaTokenInstance = this.state.contract
-        let accounts = this.state.accounts
+        let khanaTokenInstance = this.state.contract.instance
+        let accounts = this.state.user.accounts
 
         khanaTokenInstance.emergencyStop({from: accounts[0]}).then((success) => {
-            this.setState({status: 'Waiting for transaction to confirm...'});
+            this.updateLoadingMessage('Waiting for transaction to confirm...')
+
             khanaTokenInstance.MintFinished({fromBlock: 'latest'}, (err, response) => {
-                console.log('emergency stop activated')
-                this.updateState();
+                this.updateState('Emergency stop activated');
             })
         })
     }
 
     tokenEnableMinting = async () => {
-        this.setState({status: 'Processing...', isLoading: true});
+        this.updateLoadingMessage('Re-enabling token minting...')
 
-        let khanaTokenInstance = this.state.contract
-        let accounts = this.state.accounts
+        let khanaTokenInstance = this.state.contract.instance
+        let accounts = this.state.user.accounts
 
         khanaTokenInstance.resumeMinting({from: accounts[0]}).then((success) => {
-            this.setState({status: 'Waiting for transaction to confirm...'});
+            this.updateLoadingMessage('Waiting for transaction to confirm...')
+
             khanaTokenInstance.MintingEnabled({fromBlock: 'latest'}, (err, response) => {
-                console.log('Minting reenabled')
-                this.updateState();
+                this.updateState('Minting reenabled');
             })
         })
     }
 
     render() {
-        const isLoading = this.state.isLoading;
-        const mintingEnabled = this.state.mintingEnabled
+        const isLoading = this.state.app.isLoading
+        const hasStatusMessage = this.state.app.status
+        const mintingEnabled = this.state.contract.mintingEnabled
 
         return (
             <div className="App">
@@ -235,7 +281,12 @@ class App extends Component {
             {isLoading &&
                 <div>
                     <div className="loader"></div>
-                    <p>{this.state.status}</p>
+                </div>
+            }
+
+            {hasStatusMessage !== '' &&
+                <div>
+                    <p>{this.state.app.status}</p>
                 </div>
             }
 
@@ -257,14 +308,14 @@ class App extends Component {
 
             <h1>Dashboard</h1>
             <h2>Your information</h2>
-            <p>Your balance: {this.state.addressBalance}</p>
-            <p>Your address: {this.state.currentAddress}</p>
-            <p>You have {((this.state.addressBalance / this.state.totalSupply) * 100).toFixed(2)}% of the supply</p>
+            <p>Your balance: {this.state.user.tokenBalance}</p>
+            <p>Your address: {this.state.user.currentAddress}</p>
+            <p>You have {((this.state.user.tokenBalance / this.state.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
 
             <h2>Token Information</h2>
-            <p>Token name: {this.state.tokenName}</p>
-            <p>Token symbol: {this.state.tokenSymbol}</p>
-            <p>Total supply: {this.state.totalSupply}</p>
+            <p>Token name: {this.state.contract.tokenName}</p>
+            <p>Token symbol: {this.state.contract.tokenSymbol}</p>
+            <p>Total supply: {this.state.contract.totalSupply}</p>
 
             </div>
             </div>
