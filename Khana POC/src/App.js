@@ -22,6 +22,14 @@ class App extends Component {
                 totalSupply: 0,
                 mintingEnabled: null,
                 latestIpfsHash: null,
+                ipfsLogHistory: [{
+                    blockNumber: 0,
+                    minter: null,
+                    awardedTo: null,
+                    amount: 0,
+                    ipfsHash: '',
+                    ethTxHash: ''
+                }]
             },
             user: {
                 accounts: null,
@@ -81,8 +89,23 @@ class App extends Component {
                  })
 
                  awardEventsAll.get((err, result) => {
-                     console.log(err)
+
+                     if (error) {
+                         // TODO: - do something
+                     }
+
                      console.log(result)
+                     let logHistory = result.map((log) => {
+                         return {
+                             blockNumber: log.blockNumber,
+                             minter: log.args.minter,
+                             awardedTo: log.args.awardedTo,
+                             amount: (this.state.web3.fromWei(log.args.amount, 'ether')).toString(10),
+                             ipfsHash: log.args.ipfsHash,
+                             ethTxHash: log.transactionHash
+                         }
+                     })
+
                      let ipfsEventLogged = result[result.length - 1]
 
                      // Get latest IPFS hash if it exists
@@ -93,18 +116,22 @@ class App extends Component {
                                  instance: contractInstance,
                                  tokenName: name,
                                  tokenSymbol: symbol,
-                                 latestIpfsHash: ipfsEventLogged.args.ipfsHash
+                                 latestIpfsHash: ipfsEventLogged.args.ipfsHash,
+                                 ipfsLogHistory: logHistory
                              },
                              user: {
                                  accounts: accounts
                              }
                          })
                      } else {
+
+                         // No IPFS hash exists (i.e. we're just setting up the contract)
                          this.setState({
                              contract: {
                                  instance: contractInstance,
                                  tokenName: name,
                                  tokenSymbol: symbol,
+                                 ipfsLogHistory: []
                              },
                              user: {
                                  accounts: accounts
@@ -177,7 +204,7 @@ class App extends Component {
                     content: Buffer.from(newContents)
                 }
 
-                this.updateLoadingMessage('Creating inital IPFS file...')
+                this.updateLoadingMessage('Creating inital IPFS file (may take a while)...')
 
                 // Write description to IPFS, return hash
                 ipfsResult(ipfs.add(ipfsContent))
@@ -193,7 +220,7 @@ class App extends Component {
                         content: Buffer.from(newContents)
                     }
 
-                    this.updateLoadingMessage('Adding details to IPFS file...')
+                    this.updateLoadingMessage('Adding details to IPFS file (may take a while)...')
 
                     // Write description to IPFS, return hash
                     ipfsResult(ipfs.add(ipfsContent))
@@ -206,31 +233,46 @@ class App extends Component {
             // Then store the recent tx and record on blockchain (and events log)
             console.log(ipfsResult[0].hash)
             let ipfsHash = ipfsResult[0].hash
-            this.updateLoadingMessage('Entry added to IPFS file successfully (with IPFS hash: ' + ipfsHash + ') \nNow adding IPFS hash permanently to minting transaction on ethereum...')
+            this.updateLoadingMessage('Entry added to IPFS file successfully (with IPFS hash: ' + ipfsHash + '). Now adding IPFS hash permanently to minting transaction on ethereum...')
 
             // Make contract changes
             let khanaTokenInstance = this.state.contract.instance
             let accounts = this.state.user.accounts
 
-            khanaTokenInstance.award(address, amount, ipfsHash, {from: accounts[0]}).then((result) => {
+            khanaTokenInstance.award(address, amount, ipfsHash, {from: accounts[0]}).then((txResult) => {
+
+                console.log(txResult)
+                console.log(txResult.receipt.blockNumber)
                 this.updateLoadingMessage('Waiting for transaction to confirm...')
 
-                // TODO: - if running on private blockchain / dev (ganache or truffle dev), the latest block may already have an event (not the pending block to be mined), therefore two events will be detected
+                let awardedEvent = khanaTokenInstance.Awarded({fromBlock: 'latest'}, (err, response) => {
 
-                // watch for tx completion
-                khanaTokenInstance.Awarded({fromBlock: 'latest'}, (err, response) => {
-                    console.log('Tx hash: ' + response.transactionHash);
-                    console.log(response);
+                    // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
+                    if (response.blockNumber >= txResult.receipt.blockNumber) {
 
-                    // Update latest ipfsHash
-                    let contractState = this.state.contract
-                    contractState.latestIpfsHash = ipfsHash
-                    this.setState({ contract: contractState })
-                    this.updateState('Transaction confirmed with hash: ' + response.transactionHash);
+                        console.log('Tx hash: ' + response.transactionHash);
+
+                        // Update latest ipfsHash and history
+                        let contractState = this.state.contract
+                        contractState.latestIpfsHash = ipfsHash
+                        contractState.ipfsLogHistory.push({
+                            blockNumber: response.blockNumber,
+                            minter: response.args.minter,
+                            awardedTo: response.args.awardedTo,
+                            amount: (web3.fromWei(response.args.amount, 'ether')).toString(10),
+                            ipfsHash: response.args.ipfsHash,
+                            ethTxHash: response.transactionHash
+                        })
+
+                        this.setState({ contract: contractState })
+                        this.updateState('Transaction confirmed with hash: ' + response.transactionHash);
+
+                        awardedEvent.stopWatching()
+                    }
                 })
             })
         })
-    };
+    }
 
     tokenEmergencyStop = async () => {
         this.updateLoadingMessage('Processing emergency stop...')
@@ -266,6 +308,12 @@ class App extends Component {
         const isLoading = this.state.app.isLoading
         const hasStatusMessage = this.state.app.status
         const mintingEnabled = this.state.contract.mintingEnabled
+
+        const transactionList = this.state.contract.ipfsLogHistory.sort((a, b) => {
+            return a.blockNumber < b.blockNumber ? 1 : -1
+        }).map(tx => {
+            return <li key={tx.ethTxHash}> {tx.minter} minted {tx.amount} for {tx.awardedTo} in block number {tx.blockNumber}</li>;
+        })
 
         return (
             <div className="App">
@@ -305,6 +353,9 @@ class App extends Component {
             ) : (
                 <button onClick={this.tokenEnableMinting}> Re-enable minting </button>
             )}
+
+            <h3>Minting transaction history</h3>
+            <ul> { transactionList } </ul>
 
             <h1>Dashboard</h1>
             <h2>Your information</h2>

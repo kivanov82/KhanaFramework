@@ -10,7 +10,7 @@ contract KhanaToken is MintableToken {
     uint public INITIAL_SUPPLY = 500000000000000000000;
 
     // We emit an event when tokens have been awarded to someone, including the updated IPFS hash of the audit trail (which includes date, address, amount, and reason for awarding)
-    event Awarded(address indexed accountAddress, uint amount, string ipfsHash);
+    event Awarded(address indexed awardedTo, address indexed minter, uint amount, string ipfsHash);
     event MintingEnabled();
 
     constructor() public {
@@ -19,7 +19,7 @@ contract KhanaToken is MintableToken {
 
     function award(address _account, uint256 _amount, string ipfsHash) public {
         mint(_account, _amount);
-        emit Awarded(_account, _amount, ipfsHash);
+        emit Awarded(_account, msg.sender, _amount, ipfsHash);
     }
 
     // TODO: - Should only allow 'admins' to stop and resume
