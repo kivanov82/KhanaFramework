@@ -20,8 +20,8 @@ contract KhanaToken is MintableToken {
     mapping (address => bool) public adminAccounts;
 
     event MintingEnabled();
-    event AdminAdded();
-    event AdminRemoved();
+    event AdminAdded(address indexed account);
+    event AdminRemoved(address indexed account);
     event Awarded(
         address indexed awardedTo,
         address indexed minter,
@@ -110,7 +110,7 @@ contract KhanaToken is MintableToken {
      */
     function addAdmin(address _account) public onlyAdmins {
         adminAccounts[_account] = true;
-        emit AdminAdded();
+        emit AdminAdded(_account);
     }
 
     /**
@@ -123,7 +123,7 @@ contract KhanaToken is MintableToken {
     function removeAdmin(address _account) public onlyAdmins {
         require(_account != owner);
         adminAccounts[_account] = false;
-        emit AdminRemoved();
+        emit AdminRemoved(_account);
     }
 
     /**

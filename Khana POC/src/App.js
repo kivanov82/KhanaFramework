@@ -175,7 +175,9 @@ class App extends Component {
             return this.setState(state)
         })
 
-        document.getElementById("awardButton").disabled = false;
+        if (this.state.user.isAdmin) {
+            document.getElementById("awardButton").disabled = false;
+        }
     }
 
     updateLoadingMessage = async(message) => {
