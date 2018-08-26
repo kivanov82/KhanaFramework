@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 import 'openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /**
  * @title Proof of Concept contract for the Khana framework
@@ -11,22 +12,32 @@ import 'openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
  */
 
 contract KhanaToken is MintableToken {
+    using SafeMath for uint256;
 
     string public name = "KhanaToken";
     string public symbol = "KHNA";
     uint8 public decimals = 18;
     uint public INITIAL_SUPPLY = 500000000000000000000;
+    uint public minimumEthBalance = 1000000000000000000; // Minimum ETH contract should have
+
+    bool public contractEnabled = true;
 
     mapping (address => bool) public adminAccounts;
 
-    event MintingEnabled();
-    event AdminAdded(address indexed account);
-    event AdminRemoved(address indexed account);
-    event Awarded(
+    event LogContractDisabled();
+    event LogContractEnabled();
+    event LogAdminAdded(address indexed account);
+    event LogAdminRemoved(address indexed account);
+    event LogAwarded(
         address indexed awardedTo,
         address indexed minter,
         uint amount,
         string ipfsHash
+    );
+    event LogSell(
+        address sellingAccount,
+        uint256 sellAmount,
+        uint256 ethReceived
     );
 
     /**
@@ -58,12 +69,32 @@ contract KhanaToken is MintableToken {
     }
 
     /**
-     * @dev The core of the contract, award tokens with relevant audit information.
+     * @dev Throws if called when contract has been disabled via 'emergencyStop()'.
+     */
+    modifier contractIsEnabled() {
+        require(contractEnabled);
+        _;
+    }
+
+    /**
+     * @dev The fallback function, which is also used to 'fund' the token for
+     * liquidity of the token (see 'sell' function).
+     * @notice Anyone can fund the token contract with ETH to increase the 'pot'
+     * associated with the token. However this would normally be done by the
+     * community organisers, who may send a portion of sponsorship money or ticket
+     * sales from community organised events.
+     */
+    function () public contractIsEnabled payable { }
+
+    /**
+     * @dev Award tokens to users with relevant audit information in an IPFS file.
      * @notice The IPFS hash should always be included with any reward of tokens,
      * to ensure auditing of the minting process can be done at anytime in the future.
      * The event emitted must also specify the IPFS hash so that it is permanently
      * recorded on the blockchain, and that the IPFS hash related to the most up
      * to date audit log can be found easily.
+     * We do not want to record the IPFS hashes in an array on the blockchain as
+     * it would end up costing too much, hence we 'store' them in emitted event logs.
      * @param _account The address of the user to awarded.
      * @param _amount The amount to be awarded.
      * @param _ipfsHash The IPFS hash of the latest audit log, which includes the
@@ -76,9 +107,62 @@ contract KhanaToken is MintableToken {
     )
         public
         onlyAdmins
+        contractIsEnabled
     {
         mint(_account, _amount);
-        emit Awarded(_account, msg.sender, _amount, _ipfsHash);
+        emit LogAwarded(_account, msg.sender, _amount, _ipfsHash);
+    }
+
+    /**
+     * @dev Allow token holders to sell their tokens in return for ETH.
+     * @notice At the moment the calculation for how much ETH is returned is very
+     * simplistic. Depending on the portion of the supply they hold, they can
+     * liquidate a larger amount of the ETH 'pot', to a maximum of 50% of the pot.
+     * E.g. User A holds 25% of the supply and the ETH pot is 100 ETH. Therefore
+     * they can sell all their tokens for a maximum amount of 12.5 ETH.
+     * (0.25 * 0.5 * 100 = 12.5 ETH) See 'whitepaper' for more details around
+     * game theory and how this may work as an incentive mechanism. This will
+     * likely change in the near future to a bonding curve implementation.
+     * @param _amount The amount to sell.
+     */
+    function sell(uint256 _amount) public contractIsEnabled returns (bool) {
+        uint256 tokenBalanceOfSender = balanceOf(msg.sender);
+        require(_amount > 0 && tokenBalanceOfSender >= _amount);
+
+        uint256 redeemableEth = calculateSellReturn(_amount, tokenBalanceOfSender);
+        _burn(msg.sender, _amount);
+        msg.sender.transfer(redeemableEth);
+
+        emit LogSell(msg.sender, _amount, redeemableEth);
+
+        return true;
+    }
+
+    /**
+     * @dev Allow token hold to calculate the potential ETH return they will receive
+     * from selling a certain amount of tokens.
+     * @notice This is also used in the 'sell' function. See above for discussion.
+     * @param _sellAmount The amount of tokens to sell.
+     * @param _tokenBalance Their entire token balance.
+     */
+    function calculateSellReturn(uint256 _sellAmount, uint256 _tokenBalance) public view returns (uint256) {
+        require(address(this).balance >= minimumEthBalance);
+        require(_tokenBalance >= _sellAmount);
+
+        uint256 tokenSupply = getSupply();
+
+        // EVM doesn't deal with floating points well, so multiple and divide by
+        // 10e18 to retain accuracy
+        uint256 multiplier = 10**18;
+
+        // User can redeem a maximum 50% of the 'pot' if they own 100% of the supply
+        uint256 maxRedeemableEth = address(this).balance.div(2);
+
+        // Essentially ((tokens i have) / (total supply)) * (ETH in contract * 0.5),
+        // using a multiplier due to EVM constraints
+        uint256 redeemableEth = (_sellAmount.mul(multiplier).div(tokenSupply).mul(maxRedeemableEth)).div(multiplier);
+
+        return redeemableEth;
     }
 
     /**
@@ -88,9 +172,9 @@ contract KhanaToken is MintableToken {
      * @return A bool indicating if the emergency stop was successful.
      */
     // override onlyOwner in mintableToken
-    function emergencyStop() public onlyAdmins canMint returns (bool) {
-        mintingFinished = true;
-        emit MintFinished();
+    function emergencyStop() public onlyAdmins contractIsEnabled returns (bool) {
+        contractEnabled = false;
+        emit LogContractDisabled();
         return true;
     }
 
@@ -98,9 +182,9 @@ contract KhanaToken is MintableToken {
      * @dev Restore minting ability for all admins.
      * @return A bool indicating if the resuming of minting was successful.
      */
-    function resumeMinting() public onlyAdmins returns (bool) {
-        mintingFinished = false;
-        emit MintingEnabled();
+    function resumeContract() public onlyAdmins returns (bool) {
+        contractEnabled = true;
+        emit LogContractEnabled();
         return true;
     }
 
@@ -110,7 +194,7 @@ contract KhanaToken is MintableToken {
      */
     function addAdmin(address _account) public onlyAdmins {
         adminAccounts[_account] = true;
-        emit AdminAdded(_account);
+        emit LogAdminAdded(_account);
     }
 
     /**
@@ -123,7 +207,7 @@ contract KhanaToken is MintableToken {
     function removeAdmin(address _account) public onlyAdmins {
         require(_account != owner);
         adminAccounts[_account] = false;
-        emit AdminRemoved(_account);
+        emit LogAdminRemoved(_account);
     }
 
     /**
@@ -150,7 +234,6 @@ contract KhanaToken is MintableToken {
     ) public onlyOwner {
         _burn(_account, _amount);
     }
-
 
     /**
      * @dev Get the total supply of tokens in circulation.

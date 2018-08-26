@@ -88,7 +88,7 @@ class App extends Component {
                 return contractInstance.checkIfAdmin.call(accounts[0])
             }).then((isAdmin) => {
 
-                let awardEventsAll = contractInstance.Awarded({}, {
+                let awardEventsAll = contractInstance.LogAwarded({}, {
                     fromBlock: 0,
                     toBlock: 'latest'
                 })
@@ -144,6 +144,7 @@ class App extends Component {
                             }
                         })
                     }
+                    awardEventsAll.stopWatching();
                     this.updateState();
                 })
             })
@@ -255,7 +256,7 @@ class App extends Component {
 
                 this.updateLoadingMessage('Waiting for transaction to confirm...')
 
-                let awardedEvent = khanaTokenInstance.Awarded({fromBlock: 'latest'}, (err, response) => {
+                let awardedEvent = khanaTokenInstance.LogAwarded({fromBlock: 'latest'}, (err, response) => {
 
                     // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
                     if (response.blockNumber >= txResult.receipt.blockNumber) {
@@ -282,6 +283,39 @@ class App extends Component {
         })
     }
 
+
+    sellTokens = async (event) => {
+        event.preventDefault();
+        this.updateLoadingMessage('Selling tokens...')
+
+        let khanaTokenInstance = this.state.contract.instance
+        let accounts = this.state.user.accounts
+        let amount = this.state.web3.toWei(event.target.amount.value, 'ether')
+        let tokenBalance = this.state.web3.toWei(this.state.user.tokenBalance, 'ether')
+
+        if (amount === 0) {
+            this.updateState('An amount must be entered');
+            return
+        }
+
+        khanaTokenInstance.calculateSellReturn.call(amount, tokenBalance).then((redeemableEth) => {
+            let alert = confirm("You will receive " + this.state.web3.fromWei(redeemableEth, 'ether') + ' ETH in return for ' + this.state.web3.fromWei(amount, 'ether') + ' ' + this.state.contract.tokenSymbol + '. Are you sure?')
+
+            if (alert === true) {
+                khanaTokenInstance.sell(amount, {from: accounts[0], gas: 100000}).then((success) => {
+                    this.updateLoadingMessage('Waiting for transaction to confirm...')
+
+                    let sellEvent = khanaTokenInstance.LogSell({fromBlock: 'latest'}, (err, response) => {
+                        let ethReceived = this.state.web3.fromWei(response.args.ethReceived.toString(), 'ether')
+
+                        this.updateState('Sell completed, received ' + ethReceived + ' ETH');
+                        sellEvent.stopWatching();
+                    })
+                })
+            }
+        })
+    }
+
     tokenEmergencyStop = async () => {
         event.preventDefault();
         this.updateLoadingMessage('Processing emergency stop...')
@@ -292,8 +326,9 @@ class App extends Component {
         khanaTokenInstance.emergencyStop({from: accounts[0]}).then((success) => {
             this.updateLoadingMessage('Waiting for transaction to confirm...')
 
-            khanaTokenInstance.MintFinished({fromBlock: 'latest'}, (err, response) => {
+            let disabledEvent = khanaTokenInstance.LogMintingDisabled({fromBlock: 'latest'}, (err, response) => {
                 this.updateState('Emergency stop activated');
+                disabledEvent.stopWatching();
             })
         })
     }
@@ -308,8 +343,9 @@ class App extends Component {
         khanaTokenInstance.resumeMinting({from: accounts[0]}).then((success) => {
             this.updateLoadingMessage('Waiting for transaction to confirm...')
 
-            khanaTokenInstance.MintingEnabled({fromBlock: 'latest'}, (err, response) => {
+            let enabledEvent = khanaTokenInstance.LogMintingEnabled({fromBlock: 'latest'}, (err, response) => {
                 this.updateState('Minting reenabled');
+                enabledEvent.stopWatching();
             })
         })
     }
@@ -333,8 +369,9 @@ class App extends Component {
         khanaTokenInstance.addAdmin(event.target.address.value, {from: accounts[0]}).then(() => {
             this.updateLoadingMessage('Waiting for transaction to confirm')
 
-            khanaTokenInstance.AdminAdded({fromBlock: 'latest'}, (err, response) => {
+            let addedEvent = khanaTokenInstance.LogAdminAdded({fromBlock: 'latest'}, (err, response) => {
                 this.updateState('User added as an admin');
+                addedEvent.stopWatching();
             })
         })
     }
@@ -348,8 +385,9 @@ class App extends Component {
         khanaTokenInstance.removeAdmin(event.target.address.value, {from: accounts[0], gas: 100000}).then(() => {
             this.updateLoadingMessage('Waiting for transaction to confirm')
 
-            khanaTokenInstance.AdminRemoved({fromBlock: 'latest'}, (err, response) => {
+            let removedEvent = khanaTokenInstance.LogAdminRemoved({fromBlock: 'latest'}, (err, response) => {
                 this.updateState('User removed as an admin');
+                removedEvent.stopWatching();
             })
         })
     }
@@ -473,6 +511,11 @@ class App extends Component {
             <p>Your balance: {this.state.user.tokenBalance}  {this.state.contract.tokenSymbol}</p>
             <p>Your address: {this.state.user.currentAddress}</p>
             <p>You have {((this.state.user.tokenBalance / this.state.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
+
+            <form onSubmit={this.sellTokens}>
+            <label> Amount of {this.state.contract.tokenSymbol} to sell: <input type="text" name="amount"/></label>
+            <input type="submit" value=" Sell tokens " />
+            </form>
 
             <h2>Token Information</h2>
             <p>Token name: {this.state.contract.tokenName}</p>
