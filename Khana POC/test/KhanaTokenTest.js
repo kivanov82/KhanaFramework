@@ -180,20 +180,24 @@ contract('KhanaToken', function(accounts) {
 
         assert.equal(log.event, 'LogContractEnabled', "Resume contract event incorrectly emitted");
 
-        // Fund the contract with ETH
+        // Fund the contract with 10 ETH
+        await khana.sendTransaction({from: owner, value: 10000000000000000000});
 
-        await khana.sendTransaction({from: owner, value: 1000000000000000000})
+        // Work out how much ETH we should get in return
+        const amountToSell = 10000000000000000000;
+        const totalSupply = (await khana.getSupply()).toNumber();
+        const ethInContract = web3.eth.getBalance(khana.address);
+        const expectedEthReturn = (amountToSell / totalSupply) * (ethInContract * 0.5);
 
-        bobBalance -= 10000000000000000000;
-        await khana.sell(10000000000000000000, {from: bob});
+        bobBalance -= amountToSell;
+        await khana.sell(amountToSell, {from: bob});
 
         const Sell = await khana.LogSell();
         const logSell = await new Promise ((resolve, reject) => {
             Sell.watch((error, log) => { resolve(log);});
         });
 
-        // We don't need to test the ethReturned value as the formula will likely change
-        const expectedEventResult = {sellingAccount: bob, sellAmount: 10000000000000000000};
+        const expectedEventResult = {sellingAccount: bob, sellAmount: amountToSell, ethReceived: expectedEthReturn};
 
         const logSellingAccount = logSell.args.sellingAccount;
         const logSellAmount = logSell.args.sellAmount.toNumber();
@@ -201,6 +205,7 @@ contract('KhanaToken', function(accounts) {
 
         assert.equal(expectedEventResult.sellingAccount, logSellingAccount, "Sell event sellingAccount property not emitted correctly, check Sell method");
         assert.equal(expectedEventResult.sellAmount, logSellAmount, "Sell event sellAmount property not emitted correctly, check Sell method");
+        assert.equal(expectedEventResult.ethReceived, logEthReturned, "Sell event ethReceived property not emitted correctly, check Sell method");
     });
 
     it("should be able to remove admin (as owner)", async () => {

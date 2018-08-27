@@ -20,7 +20,8 @@ class App extends Component {
                 tokenName: '',
                 tokenSymbol: '',
                 totalSupply: 0,
-                mintingEnabled: null,
+                ethAmount: 0,
+                contractEnabled: null,
                 latestIpfsHash: null,
                 ipfsLogHistory: [{
                     blockNumber: 0,
@@ -74,6 +75,11 @@ class App extends Component {
         this.setState({app: { status: 'Loading from blockchain', isLoading: true}})
 
         this.state.web3.eth.getAccounts((error, accounts) => {
+            if (error) {
+                console.log(error);
+                return
+            }
+
             khanaToken.deployed().then((khanaInstance) => {
                 contractInstance = khanaInstance
             }).then(() => {
@@ -147,6 +153,8 @@ class App extends Component {
                     awardEventsAll.stopWatching();
                     this.updateState();
                 })
+            }).catch((error) => {
+                console.log(error)
             })
         })
     }
@@ -156,28 +164,39 @@ class App extends Component {
         let khanaTokenInstance = this.state.contract.instance
         let accounts = this.state.user.accounts
         var supply
-        var balance
+        var tokenBalance
 
         khanaTokenInstance.getSupply.call().then((newSupply) => {
             supply = (web3.fromWei(newSupply, 'ether')).toString(10);
             return khanaTokenInstance.balanceOf(accounts[0])
         }).then((newBalance) => {
-            balance = (web3.fromWei(newBalance, 'ether')).toString(10);
-            return khanaTokenInstance.mintingFinished()
-        }).then((mintingDisabled) => {
-            let state = this.state
-            state.contract.totalSupply = supply
-            state.contract.mintingEnabled = !mintingDisabled
-            state.user.currentAddress = accounts[0]
-            state.user.tokenBalance = balance
-            state.app.status = message ? message : ''
-            state.app.isLoading = false
+            tokenBalance = (web3.fromWei(newBalance, 'ether')).toString(10);
+            return khanaTokenInstance.contractEnabled()
+        }).then((contractStatus) => {
 
-            return this.setState(state)
+            web3.eth.getBalance(khanaTokenInstance.address, (err, result) => {
+                let state = this.state
+                state.contract.totalSupply = supply
+                state.contract.contractEnabled = contractStatus
+                state.contract.ethAmount = web3.fromWei(result, 'ether').toString(10)
+                state.user.currentAddress = accounts[0]
+                state.user.tokenBalance = tokenBalance
+                state.app.status = message ? message : ''
+                state.app.isLoading = false
+
+                return this.setState(state)
+            })
+
+        }).catch((error) => {
+            console.log(error)
         })
 
         if (this.state.user.isAdmin) {
             document.getElementById("awardButton").disabled = false;
+        }
+
+        if (message) {
+            console.log(message);
         }
     }
 
@@ -279,7 +298,11 @@ class App extends Component {
                         awardedEvent.stopWatching()
                     }
                 })
+            }).catch((error) => {
+                this.updateState(error.message)
             })
+        }).catch((error) => {
+            this.updateState(error.message)
         })
     }
 
@@ -311,8 +334,14 @@ class App extends Component {
                         this.updateState('Sell completed, received ' + ethReceived + ' ETH');
                         sellEvent.stopWatching();
                     })
+                }).catch((error) => {
+                    this.updateState(error.message)
                 })
+            } else {
+                this.updateState()
             }
+        }).catch((error) => {
+            this.updateState(error.message)
         })
     }
 
@@ -330,6 +359,8 @@ class App extends Component {
                 this.updateState('Emergency stop activated');
                 disabledEvent.stopWatching();
             })
+        }).catch((error) => {
+            this.updateState(error.message)
         })
     }
 
@@ -347,6 +378,8 @@ class App extends Component {
                 this.updateState('Minting reenabled');
                 enabledEvent.stopWatching();
             })
+        }).catch((error) => {
+            this.updateState(error.message)
         })
     }
 
@@ -357,6 +390,8 @@ class App extends Component {
         let khanaTokenInstance = this.state.contract.instance
         khanaTokenInstance.checkIfAdmin(event.target.address.value).then((isAdmin) => {
             this.updateState('User ' + (isAdmin ? 'is ' : 'is not ') + 'an admin')
+        }).catch((error) => {
+            this.updateState(error.message)
         })
     }
 
@@ -373,11 +408,13 @@ class App extends Component {
                 this.updateState('User added as an admin');
                 addedEvent.stopWatching();
             })
+        }).catch((error) => {
+            this.updateState(error.message)
         })
     }
 
     removeAdmin = async(event) => {
-        event.preventDefault();
+        event.preventDefault()
         this.updateLoadingMessage('Removing user as an admin...')
 
         let khanaTokenInstance = this.state.contract.instance
@@ -389,6 +426,8 @@ class App extends Component {
                 this.updateState('User removed as an admin');
                 removedEvent.stopWatching();
             })
+        }).catch((error) => {
+            this.updateState(error.message)
         })
     }
 
@@ -397,7 +436,7 @@ class App extends Component {
 
         ipfs.files.cat('/ipfs/' + this.state.contract.latestIpfsHash, (err, file) => {
             if (err) {
-                console.log(err)
+                this.updateState(err.message)
             }
 
             // Get the raw text of the IPFS file, split it per 'new lines', split per comma, and determine if the transaction is relevant for the user's address
@@ -476,9 +515,9 @@ class App extends Component {
 
                 <h2>Admin Tools</h2>
                 {mintingEnabled ? (
-                    <button onClick={this.tokenEmergencyStop}> Activate Emergency Minting Stop </button>
+                    <button onClick={this.tokenEmergencyStop}> Activate Emergency Stop </button>
                 ) : (
-                    <button onClick={this.tokenEnableMinting}> Re-enable minting </button>
+                    <button onClick={this.tokenEnableMinting}> Re-enable Contract </button>
                 )}
                 <p></p>
 
@@ -503,9 +542,13 @@ class App extends Component {
 
             <h1>User Dashboard</h1>
 
-            <h3>Minting transaction history</h3>
-            <button onClick={this.getIpfsReasons}> Load reasons from IPFS </button>
-            <ul> { transactionList.length > 0 ? transactionList : 'No transactions available' } </ul>
+            {this.state.contract.latestIpfsHash &&
+                <div>
+                <h3>Minting transaction history</h3>
+                <button onClick={this.getIpfsReasons}> Load reasons from IPFS </button>
+                <ul> { transactionList.length > 0 ? transactionList : 'No transactions available' } </ul>
+                </div>
+            }
 
             <h3>Your information</h3>
             <p>Your balance: {this.state.user.tokenBalance}  {this.state.contract.tokenSymbol}</p>
@@ -519,8 +562,8 @@ class App extends Component {
 
             <h2>Token Information</h2>
             <p>Token name: {this.state.contract.tokenName}</p>
-            <p>Token symbol: {this.state.contract.tokenSymbol}</p>
-            <p>Total supply: {this.state.contract.totalSupply}</p>
+            <p>Total supply: {this.state.contract.totalSupply} {this.state.contract.tokenSymbol}</p>
+            <p>Amount of ETH for bonding curve: {this.state.contract.ethAmount} ETH</p>
 
             </div>
             </div>
