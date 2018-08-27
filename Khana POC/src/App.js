@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import KhanaToken from '../build/contracts/KhanaToken.json'
+import BondingCurveFunds from '../build/contracts/BondingCurveFunds.json'
 import getWeb3 from './utils/getWeb3'
 import ipfs from './utils/ipfs';
 
@@ -17,6 +18,7 @@ class App extends Component {
             web3: null,
             contract: {
                 instance: null,
+                fundsInstance: null,
                 address: '',
                 tokenName: '',
                 tokenSymbol: '',
@@ -69,9 +71,14 @@ class App extends Component {
         const contract = require('truffle-contract')
         const khanaToken = contract(KhanaToken)
         khanaToken.setProvider(this.state.web3.currentProvider)
+
+        const bondingCurveFunds = contract(BondingCurveFunds)
+        bondingCurveFunds.setProvider(this.state.web3.currentProvider)
+
         var contractInstance;
         var name;
         var symbol;
+        var fundsInstance;
 
         this.setState({app: { status: 'Loading from blockchain', isLoading: true}})
 
@@ -92,6 +99,10 @@ class App extends Component {
             }).then((instanceSymbol) => {
                 symbol = instanceSymbol
             }).then(() => {
+                return bondingCurveFunds.deployed()
+            }).then((bondingFundsInstance) => {
+                fundsInstance = bondingFundsInstance
+            }).then(() => {
                 return contractInstance.checkIfAdmin.call(accounts[0])
             }).then((isAdmin) => {
 
@@ -103,7 +114,7 @@ class App extends Component {
                 awardEventsAll.get((err, result) => {
 
                     if (error) {
-                        // TODO: - do something
+                        console.log(error)
                     }
 
                     let logHistory = result.map((log) => {
@@ -125,6 +136,7 @@ class App extends Component {
                         this.setState({
                             contract: {
                                 instance: contractInstance,
+                                fundsInstance: fundsInstance,
                                 tokenName: name,
                                 tokenSymbol: symbol,
                                 latestIpfsHash: ipfsEventLogged.args.ipfsHash,
@@ -141,6 +153,7 @@ class App extends Component {
                         this.setState({
                             contract: {
                                 instance: contractInstance,
+                                fundsInstance: fundsInstance,
                                 tokenName: name,
                                 tokenSymbol: symbol,
                                 ipfsLogHistory: []
@@ -163,8 +176,8 @@ class App extends Component {
     updateState = async (message) => {
         let web3 = this.state.web3
         let khanaTokenInstance = this.state.contract.instance
-        let contractAddress = khanaTokenInstance.address
         let accounts = this.state.user.accounts
+        let fundsInstance = this.state.contract.fundsInstance
         var supply
         var tokenBalance
 
@@ -176,12 +189,12 @@ class App extends Component {
             return khanaTokenInstance.contractEnabled()
         }).then((contractStatus) => {
 
-            web3.eth.getBalance(contractAddress, (err, result) => {
+            web3.eth.getBalance(fundsInstance.address, (err, result) => {
                 let state = this.state
                 state.contract.totalSupply = supply
-                state.contract.address = contractAddress
+                state.contract.address = khanaTokenInstance.address
                 state.contract.contractEnabled = contractStatus
-                state.contract.ethAmount = web3.fromWei(result, 'ether').toString(10)
+                state.contract.ethAmount = (web3.fromWei(result, 'ether')).toString(10);
                 state.user.currentAddress = accounts[0]
                 state.user.tokenBalance = tokenBalance
                 state.app.status = message ? message : ''
@@ -567,7 +580,10 @@ class App extends Component {
             <p>Token name: {this.state.contract.tokenName}</p>
             <p>Token contract address: {this.state.contract.address}</p>
             <p>Total supply: {this.state.contract.totalSupply} {this.state.contract.tokenSymbol}</p>
-            <p>Amount of ETH for bonding curve: {this.state.contract.ethAmount} ETH</p>
+            <p>Amount of ETH in bonding funds contract: {this.state.contract.ethAmount} ETH</p>
+            {this.state.contract.fundsInstance &&
+                <p>Bonding funds contract address: {this.state.contract.fundsInstance.address}</p>
+            }
 
             </div>
             </div>

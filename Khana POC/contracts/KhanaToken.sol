@@ -2,6 +2,7 @@ pragma solidity ^0.4.24;
 
 import 'openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import './BondingCurveFunds.sol';
 
 /**
  * @title Proof of Concept contract for the Khana framework
@@ -22,6 +23,8 @@ contract KhanaToken is MintableToken {
 
     bool public contractEnabled = true;
 
+    address public fundsContract;
+
     mapping (address => bool) public adminAccounts;
 
     event LogContractDisabled();
@@ -33,12 +36,16 @@ contract KhanaToken is MintableToken {
         address indexed minter,
         uint amount,
         string ipfsHash
-    );
+        );
     event LogSell(
         address sellingAccount,
         uint256 sellAmount,
         uint256 ethReceived
-    );
+        );
+    event LogFundsContractChanged(
+        address oldContract,
+        address newContract
+        );
 
     /**
      * @dev The owner is automatically set by Ownable.sol. The owner is also added
@@ -77,14 +84,25 @@ contract KhanaToken is MintableToken {
     }
 
     /**
-     * @dev The fallback function, which is also used to 'fund' the token for
+     * @dev Throws if called when contract has been disabled via 'emergencyStop()'.
+     */
+    modifier fundsContractIsValid() {
+        require(fundsContract != address(0));
+        _;
+    }
+
+    /**
+     * @dev The fallback function, which is used to 'fund' the token for
      * liquidity of the token (see 'sell' function).
      * @notice Anyone can fund the token contract with ETH to increase the 'pot'
      * associated with the token. However this would normally be done by the
      * community organisers, who may send a portion of sponsorship money or ticket
      * sales from community organised events.
+     * The 'fundsContract' must be set to a valid address.
      */
-    function () public contractIsEnabled payable { }
+    function () public contractIsEnabled payable fundsContractIsValid {
+        fundsContract.transfer(msg.value);
+    }
 
     /**
      * @dev Award tokens to users with relevant audit information in an IPFS file.
@@ -119,19 +137,20 @@ contract KhanaToken is MintableToken {
      * simplistic. Depending on the portion of the supply they hold, they can
      * liquidate a larger amount of the ETH 'pot', to a maximum of 50% of the pot.
      * E.g. User A holds 25% of the supply and the ETH pot is 100 ETH. Therefore
-     * they can sell all their tokens for a maximum amount of 12.5 ETH.
-     * (0.25 * 0.5 * 100 = 12.5 ETH) See 'whitepaper' for more details around
+     * they can sell all their tokens for a maximum amount of 12.5 ETH
+     * (0.25 * 0.5 * 100 = 12.5 ETH). See 'whitepaper' for more details around
      * game theory and how this may work as an incentive mechanism. This will
-     * likely change in the near future to a bonding curve implementation.
+     * likely change in the future to a more complex bonding curve implementation.
      * @param _amount The amount to sell.
      */
-    function sell(uint256 _amount) public contractIsEnabled returns (bool) {
+    function sell(uint256 _amount) public contractIsEnabled fundsContractIsValid returns (bool) {
         uint256 tokenBalanceOfSender = balanceOf(msg.sender);
         require(_amount > 0 && tokenBalanceOfSender >= _amount);
 
         uint256 redeemableEth = calculateSellReturn(_amount, tokenBalanceOfSender);
         _burn(msg.sender, _amount);
-        msg.sender.transfer(redeemableEth);
+
+        BondingCurveFunds(fundsContract).sendEth(redeemableEth, msg.sender);
 
         emit LogSell(msg.sender, _amount, redeemableEth);
 
@@ -145,8 +164,16 @@ contract KhanaToken is MintableToken {
      * @param _sellAmount The amount of tokens to sell.
      * @param _tokenBalance Their entire token balance.
      */
-    function calculateSellReturn(uint256 _sellAmount, uint256 _tokenBalance) public view returns (uint256) {
-        require(address(this).balance >= minimumEthBalance);
+    function calculateSellReturn(
+        uint256 _sellAmount,
+        uint256 _tokenBalance
+    )
+        public
+        fundsContractIsValid
+        view
+        returns (uint256)
+    {
+        require(fundsContract.balance >= minimumEthBalance);
         require(_tokenBalance >= _sellAmount);
 
         uint256 tokenSupply = getSupply();
@@ -156,7 +183,7 @@ contract KhanaToken is MintableToken {
         uint256 multiplier = 10**18;
 
         // User can redeem a maximum 50% of the 'pot' if they own 100% of the supply
-        uint256 maxRedeemableEth = address(this).balance.div(2);
+        uint256 maxRedeemableEth = fundsContract.balance.div(2);
 
         // Essentially ((tokens i have) / (total supply)) * (ETH in contract * 0.5),
         // using a multiplier due to EVM constraints
@@ -166,24 +193,44 @@ contract KhanaToken is MintableToken {
     }
 
     /**
-     * @dev An emergency stop for minting that can only be called by the admins.
+     * @dev Set the 'fundsContract' to a different contract address that is used
+     * in the bonding curve.
+     * @notice Only the owner can change this value.
+     * @param _contract The contract of the new funds contract
+     */
+    function setFundsContract(address _contract) public onlyOwner {
+        address oldContract = fundsContract;
+        fundsContract = _contract;
+        emit LogFundsContractChanged(oldContract, _contract);
+    }
+
+    /**
+     * @dev An emergency stop that can only be called by the admins.
      * @notice This is an alternative to 'finishMinting()' in MintableToken.sol
-     * to enable admins to stop the minting process (not just the owner).
+     * to enable admins to stop the minting process (not just the owner), and also
+     * disables selling the token into the bonding curve contract.
+     * Having a valid 'fundsContract' is optional to set the emergency stop.
      * @return A bool indicating if the emergency stop was successful.
      */
     // override onlyOwner in mintableToken
     function emergencyStop() public onlyAdmins contractIsEnabled returns (bool) {
         contractEnabled = false;
+        if (fundsContract != address(0)) {
+            BondingCurveFunds(fundsContract).emergencyStop();
+        }
         emit LogContractDisabled();
         return true;
     }
 
     /**
-     * @dev Restore minting ability for all admins.
+     * @dev Restore contract functionality, only callable by admins.
+     * @notice A valid 'fundsContract' must be set before resuming. This can be
+     * done via setFundsContract(address).
      * @return A bool indicating if the resuming of minting was successful.
      */
-    function resumeContract() public onlyAdmins returns (bool) {
+    function resumeContract() public onlyAdmins fundsContractIsValid returns (bool) {
         contractEnabled = true;
+        BondingCurveFunds(fundsContract).resumeContract();
         emit LogContractEnabled();
         return true;
     }
