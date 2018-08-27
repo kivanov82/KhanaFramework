@@ -17,6 +17,7 @@ class App extends Component {
             web3: null,
             contract: {
                 instance: null,
+                address: '',
                 tokenName: '',
                 tokenSymbol: '',
                 totalSupply: 0,
@@ -162,6 +163,7 @@ class App extends Component {
     updateState = async (message) => {
         let web3 = this.state.web3
         let khanaTokenInstance = this.state.contract.instance
+        let contractAddress = khanaTokenInstance.address
         let accounts = this.state.user.accounts
         var supply
         var tokenBalance
@@ -174,9 +176,10 @@ class App extends Component {
             return khanaTokenInstance.contractEnabled()
         }).then((contractStatus) => {
 
-            web3.eth.getBalance(khanaTokenInstance.address, (err, result) => {
+            web3.eth.getBalance(contractAddress, (err, result) => {
                 let state = this.state
                 state.contract.totalSupply = supply
+                state.contract.address = contractAddress
                 state.contract.contractEnabled = contractStatus
                 state.contract.ethAmount = web3.fromWei(result, 'ether').toString(10)
                 state.user.currentAddress = accounts[0]
@@ -355,7 +358,7 @@ class App extends Component {
         khanaTokenInstance.emergencyStop({from: accounts[0]}).then((success) => {
             this.updateLoadingMessage('Waiting for transaction to confirm...')
 
-            let disabledEvent = khanaTokenInstance.LogMintingDisabled({fromBlock: 'latest'}, (err, response) => {
+            let disabledEvent = khanaTokenInstance.LogContractDisabled({fromBlock: 'latest'}, (err, response) => {
                 this.updateState('Emergency stop activated');
                 disabledEvent.stopWatching();
             })
@@ -364,18 +367,18 @@ class App extends Component {
         })
     }
 
-    tokenEnableMinting = async () => {
+    tokenResumeContract = async () => {
         event.preventDefault();
         this.updateLoadingMessage('Re-enabling token minting...')
 
         let khanaTokenInstance = this.state.contract.instance
         let accounts = this.state.user.accounts
 
-        khanaTokenInstance.resumeMinting({from: accounts[0]}).then((success) => {
+        khanaTokenInstance.resumeContract({from: accounts[0]}).then((success) => {
             this.updateLoadingMessage('Waiting for transaction to confirm...')
 
-            let enabledEvent = khanaTokenInstance.LogMintingEnabled({fromBlock: 'latest'}, (err, response) => {
-                this.updateState('Minting reenabled');
+            let enabledEvent = khanaTokenInstance.LogContractEnabled({fromBlock: 'latest'}, (err, response) => {
+                this.updateState('Contract reenabled');
                 enabledEvent.stopWatching();
             })
         }).catch((error) => {
@@ -458,7 +461,7 @@ class App extends Component {
     render() {
         const isLoading = this.state.app.isLoading
         const hasStatusMessage = this.state.app.status
-        const mintingEnabled = this.state.contract.mintingEnabled
+        const contractEnabled = this.state.contract.contractEnabled
 
         const transactionList = this.state.contract.ipfsLogHistory.sort((a, b) => {
             return a.blockNumber < b.blockNumber ? 1 : -1
@@ -514,10 +517,10 @@ class App extends Component {
                 </form>
 
                 <h2>Admin Tools</h2>
-                {mintingEnabled ? (
+                {contractEnabled ? (
                     <button onClick={this.tokenEmergencyStop}> Activate Emergency Stop </button>
                 ) : (
-                    <button onClick={this.tokenEnableMinting}> Re-enable Contract </button>
+                    <button onClick={this.tokenResumeContract}> Re-enable Contract </button>
                 )}
                 <p></p>
 
@@ -562,6 +565,7 @@ class App extends Component {
 
             <h2>Token Information</h2>
             <p>Token name: {this.state.contract.tokenName}</p>
+            <p>Token contract address: {this.state.contract.address}</p>
             <p>Total supply: {this.state.contract.totalSupply} {this.state.contract.tokenSymbol}</p>
             <p>Amount of ETH for bonding curve: {this.state.contract.ethAmount} ETH</p>
 
