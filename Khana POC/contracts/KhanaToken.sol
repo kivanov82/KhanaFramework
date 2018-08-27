@@ -8,8 +8,10 @@ import './BondingCurveFunds.sol';
  * @title Proof of Concept contract for the Khana framework
  * @author David Truong <david@truong.vc>
  * @dev This is a mintable token with a group of admins who can mint them (i.e.
- * award them) to community members, along with recording the IPFS hash of the
- * latest audit logs.
+ * award them) to community members, record the IPFS hash of the reasons associated
+ * with each minting, and a simple bonding curve where token holders can redeem
+ * ETH for tokens they've received.
+ * For more information, see: [TBC]
  */
 
 contract KhanaToken is MintableToken {

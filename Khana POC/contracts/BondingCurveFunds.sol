@@ -5,9 +5,9 @@ import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
 /**
  * @title Proof of Concept contract for the Funds contract
  * @author David Truong <david@truong.vc>
- * @dev This contract is meant to ONLY hold ETH funds (or maybe an alternative
- * token in the future). This is to isolate funds from logic and increase
- * safety and upgradability.
+ * @dev This contract is meant to ONLY hold and send ETH funds (or maybe an
+ * alternative token in the future). This is to isolate funds from logic and
+ * increase safety and upgradability.
  */
 
 contract BondingCurveFunds is Ownable {
@@ -104,7 +104,6 @@ contract BondingCurveFunds is Ownable {
      * @dev An emergency stop for funding and withdrawing from the contracts.
      * @return A bool indicating if the emergency stop was successful.
      */
-    // override onlyOwner in mintableToken
     function emergencyStop() public onlyTokenContractOrOwner contractIsEnabled returns (bool) {
         contractEnabled = false;
         emit LogContractDisabled();
