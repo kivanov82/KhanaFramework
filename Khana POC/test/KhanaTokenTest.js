@@ -1,4 +1,5 @@
 var KhanaToken = artifacts.require("./KhanaToken.sol");
+var BondingCurveFunds = artifacts.require("./BondingCurveFunds.sol");
 
 contract('KhanaToken', function(accounts) {
     const owner = accounts[0];
@@ -6,7 +7,8 @@ contract('KhanaToken', function(accounts) {
     const bob = accounts[2];
     var bobBalance = 0;
 
-    let khana
+    let khana;
+    let fundsContract;
 
     beforeEach('setup contract for each test', async () => {
         khana = await KhanaToken.deployed();
@@ -140,6 +142,19 @@ contract('KhanaToken', function(accounts) {
         assert(revertError, "Expected error but did not get one");
     });
 
+    it("should not be able to call functions of funds contract (when in emergency stop)", async () => {
+        fundsContract = await BondingCurveFunds.deployed();
+
+        let revertError;
+        try {
+            await fundsContract.setTokenContract(alice, {from: owner});
+        } catch (error) {
+            revertError = error;
+        }
+
+        assert(revertError, "Expected error but did not get one");
+    });
+
     it("should be able restore awarding of tokens (contract enabled)", async () => {
         await khana.resumeContract({from: owner});
         const ContractEnabled = await khana.LogContractEnabled();
@@ -171,7 +186,7 @@ contract('KhanaToken', function(accounts) {
         assert.equal(expectedEventResult.ipfsHash, logIpfsHash, "Awarded event ipfsHash property not emitted correctly, check award method");
     });
 
-    it("should be able to sell tokens (contract enabled)", async () => {
+    it("should be able to fund bonding curve by sending ETH (contract enabled)", async () => {
         await khana.resumeContract({from: owner});
         const ContractEnabled = await khana.LogContractEnabled();
         const log = await new Promise((resolve, reject) => {
@@ -180,13 +195,30 @@ contract('KhanaToken', function(accounts) {
 
         assert.equal(log.event, 'LogContractEnabled', "Resume contract event incorrectly emitted");
 
-        // Fund the contract with 10 ETH
+        // Fund the contract with 10 ETH (this should forward to the funding contract)
         await khana.sendTransaction({from: owner, value: 10000000000000000000});
+
+        fundsContract = await BondingCurveFunds.deployed();
+        const tokenContractFunding = await fundsContract.LogFundingReceived();
+        const logs = await new Promise ((resolve, reject) => {
+            tokenContractFunding.watch((error, log) => { resolve(log);});
+        })
+        const expectedEventResult = {account: khana.address, amount: 10000000000000000000};
+
+        const logAccountAddress = logs.args.account;
+        const logAmount = logs.args.amount;
+
+        assert.equal(expectedEventResult.account, logAccountAddress, "Funding received event account property not emitted correctly, check award method");
+        assert.equal(expectedEventResult.amount, logAmount, "Funding received event amount property not emitted correctly, check award method");
+    });
+
+    it("should be able to sell tokens (contract enabled)", async () => {
+        fundsContract = await BondingCurveFunds.deployed();
 
         // Work out how much ETH we should get in return
         const amountToSell = 10000000000000000000;
         const totalSupply = (await khana.getSupply()).toNumber();
-        const ethInContract = web3.eth.getBalance(khana.address);
+        const ethInContract = web3.eth.getBalance(fundsContract.address);
         const expectedEthReturn = (amountToSell / totalSupply) * (ethInContract * 0.5);
 
         bobBalance -= amountToSell;
