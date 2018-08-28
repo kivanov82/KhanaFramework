@@ -4,10 +4,26 @@ import BondingCurveFunds from '../build/contracts/BondingCurveFunds.json'
 import getWeb3 from './utils/getWeb3'
 import ipfs from './utils/ipfs';
 
-import './css/oswald.css'
-import './css/open-sans.css'
-import './css/pure-min.css'
 import './App.css'
+
+import Button from '@material-ui/core/Button';
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+import Typography from '@material-ui/core/Typography';
+import Paper from '@material-ui/core/Paper';
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
+import Grid from '@material-ui/core/Grid';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import LinearProgress from '@material-ui/core/LinearProgress';
+import Snackbar from '@material-ui/core/Snackbar';
+import CloseIcon from '@material-ui/icons/Close';
+import IconButton from '@material-ui/core/IconButton';
+
 
 class App extends Component {
 
@@ -45,7 +61,8 @@ class App extends Component {
             app: {
                 status:'waiting...',
                 isLoading: false,
-            }
+            },
+            navigation: 0,
         }
     }
 
@@ -207,7 +224,7 @@ class App extends Component {
             console.log(error)
         })
 
-        if (this.state.user.isAdmin) {
+        if (this.state.user.isAdmin && this.state.navigation === 2) {
             document.getElementById("awardButton").disabled = false;
         }
 
@@ -281,7 +298,7 @@ class App extends Component {
 
             // Then store the recent tx and record on blockchain (and events log)
             let ipfsHash = ipfsResult[0].hash
-            this.updateLoadingMessage('Entry added to IPFS file successfully (with IPFS hash: ' + ipfsHash + '). Now adding IPFS hash permanently to minting transaction on ethereum...')
+            this.updateLoadingMessage('Entry added to IPFS audit file successfully (with IPFS hash: ' + ipfsHash + '). Please confirm the ethereum transaction via your MetaMask wallet')
 
             // Make contract changes
             let khanaTokenInstance = this.state.contract.instance
@@ -471,6 +488,26 @@ class App extends Component {
         })
     }
 
+    handleNavigation = (event, value) => {
+        let state = this.state
+        state.navigation = value
+        this.setState(state)
+    };
+
+    handleClose = (event, reason) => {
+        if (reason === 'clickaway') {
+          return;
+        }
+
+        if (this.state.app.isLoading) {
+            return;
+        }
+
+        let state = this.state
+        state.app.status = ''
+        this.setState(state)
+    };
+
     render() {
         const isLoading = this.state.app.isLoading
         const hasStatusMessage = this.state.app.status
@@ -479,114 +516,215 @@ class App extends Component {
         const transactionList = this.state.contract.ipfsLogHistory.sort((a, b) => {
             return a.blockNumber < b.blockNumber ? 1 : -1
         }).map(tx => {
-            const reason = tx.reason != null ? '(Reason: ' + tx.reason + ')' : ''
-            // Admins see list of all transactions, normal users see transactions relevant to them
-            if (this.state.user.isAdmin) {
-                return <li key={tx.ethTxHash}> {tx.minter} minted {tx.amount} {this.state.contract.tokenSymbol} for user {tx.awardedTo} in block number {tx.blockNumber} {reason} <a href={"https://gateway.ipfs.io/ipfs/" + tx.ipfsHash} target="_blank">(audit)</a></li>
+
+            // If normal user (i.e. non-admin) then only show their transactions
+            if (!this.state.user.isAdmin && tx.awardedTo !== this.state.user.currentAddress) {
+                return null
             } else {
-                if (tx.awardedTo === this.state.user.currentAddress) {
-                    return <li key={tx.ethTxHash}> You were awarded {tx.amount} {this.state.contract.tokenSymbol} from {tx.minter} in block number {tx.blockNumber} {reason} <a href={"https://gateway.ipfs.io/ipfs/" + tx.ipfsHash} target="_blank">(audit)</a></li>
-                } else {
-                    return null
-                }
+                return (
+                    <TableRow key={tx.ethTxHash}>
+                      <TableCell component="th" scope="row">
+                        {tx.minter}
+                      </TableCell>
+                      <TableCell>{tx.amount} {this.state.contract.tokenSymbol}</TableCell>
+                      <TableCell>{tx.awardedTo}</TableCell>
+                      <TableCell numeric>{tx.blockNumber}</TableCell>
+                      <TableCell><Button variant="outlined" size="small" href={"https://gateway.ipfs.io/ipfs/" + tx.ipfsHash} target="_blank">IPFS log</Button></TableCell>
+                      <TableCell>{ tx.reason != null ? tx.reason : <Button variant="outlined" size="small" onClick={this.getIpfsReasons}>Load from IPFS</Button>}</TableCell>
+                    </TableRow>
+                )
             }
         })
 
         return (
             <div className="App">
-
-            <nav className={ this.state.user.isAdmin ? "navbar-admin pure-menu pure-menu-horizontal" : "navbar pure-menu pure-menu-horizontal" }>
-            <a href="#" className="pure-menu-heading pure-menu-link">Khana: a tokenized framework for community building</a>
-            </nav>
-
-            <main className="container">
-            <div className="pure-g">
-            <div className="pure-u-1-1">
-
             {isLoading &&
-                <div>
-                    <div className="loader"></div>
-                </div>
+                <LinearProgress />
+            }
+            <AppBar position="static" color={contractEnabled ? "primary" :"secondary"} >
+                <Toolbar>
+                  <Typography variant="title" color="inherit">
+                    Khana: a tokenized framework for community building
+                  </Typography>
+                </Toolbar>
+              </AppBar>
+
+              <Paper>
+                <Tabs
+                  value={this.state.navigation}
+                  onChange={this.handleNavigation}
+                  indicatorColor="primary"
+                  textColor="primary"
+                  centered
+                >
+                  <Tab label="User dashboard" />
+                  <Tab label="Token information" />
+                  { this.state.user.isAdmin &&
+                     <Tab label="Admin" />
+                  }
+                </Tabs>
+              </Paper>
+
+              <main className="container">
+
+            { /* User dashboard section */}
+            { this.state.navigation === 0 &&
+                <Grid container spacing={8}>
+                    <Grid item md>
+                      <Grid container justify="center" spacing={16}>
+
+                          <Grid key={0} item>
+                            <h3>My information</h3>
+                            <p>My address: <br/>{this.state.user.currentAddress}</p>
+                            <p>My balance: <br/>{this.state.user.tokenBalance}  {this.state.contract.tokenSymbol}</p>
+                            <p>I have {((this.state.user.tokenBalance / this.state.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
+                          </Grid>
+
+                          <Grid key={1} item>
+                            <h3>Sell my tokens</h3>
+                            <p>You can easily liquidate your tokens back to the contract, <br/>receiving ETH based on a bonding curve.</p>
+                            <form onSubmit={this.sellTokens} id="contained-button-submit">
+                            <label htmlFor="contained-button-submit"> Amount of {this.state.contract.tokenSymbol} to sell: <br />
+                            <input type="text" name="amount"/>
+                            </label>
+                            <Button variant="outlined" color="primary" size="small" type="submit">Sell tokens</Button>
+                            </form>
+                          </Grid>
+
+                          {this.state.contract.latestIpfsHash &&
+                              <Grid key={2} item>
+
+                                    <Typography variant="headline" component="h3">
+                                     Minting transaction history
+                                    </Typography>
+                                    <br />
+
+                                     { transactionList.length > 0 &&
+
+                                         <Paper>
+                                           <Table>
+                                             <TableHead>
+                                               <TableRow>
+                                                 <TableCell>Minter address</TableCell>
+                                                 <TableCell>Amount minted</TableCell>
+                                                 <TableCell>Receiver address</TableCell>
+                                                 <TableCell>Block #</TableCell>
+                                                 <TableCell>Audit trail</TableCell>
+                                                 <TableCell>Reason given</TableCell>
+                                               </TableRow>
+                                             </TableHead>
+                                             <TableBody>
+                                             { transactionList }
+                                             </TableBody>
+                                           </Table>
+                                         </Paper>
+                                     }
+                              </Grid>
+                          }
+
+                      </Grid>
+                    </Grid>
+                </Grid>
             }
 
-            {hasStatusMessage !== '' &&
-                <div>
-                    <p>{this.state.app.status}</p>
-                </div>
+            { /* Token information section */}
+            { this.state.navigation === 1 &&
+                <Grid container spacing={8}>
+                    <Grid item md>
+                      <Grid container justify="center" spacing={16}>
+
+                       <Grid key={0} item>
+                        <h3>Token Information</h3>
+                        <p>Token name: {this.state.contract.tokenName}</p>
+                        <p>Token contract address: <br/>{this.state.contract.address}</p>
+                        <p>Total supply: <br/>{this.state.contract.totalSupply} {this.state.contract.tokenSymbol}</p>
+                      </Grid>
+
+                      <Grid key={1} item>
+                        <h3>Bonding Curve Funds contract</h3>
+                        <p>Amount of ETH in funds contract: {this.state.contract.ethAmount} ETH</p>
+                        {this.state.contract.fundsInstance &&
+                            <p>Bonding funds contract address: <br/>{this.state.contract.fundsInstance.address}</p>
+                        }
+                        <p>You can send ETH directly to both the token contract or the funds contract, <br/>and the ETH will be added to the bonding curve</p>
+                       </Grid>
+                     </Grid>
+                    </Grid>
+                </Grid>
             }
 
             { /* Admin section */}
-            {this.state.user.isAdmin &&
-                <div>
-                <h1>Admin abilities</h1>
+            { this.state.navigation === 2 &&
+                <Grid container>
+                    <Grid item md>
+                        <Grid container justify="center">
+                            <Grid key={0} item>
+                            <h3>Award tokens</h3>
+                            <p>Award tokens to community members for their contributions and participation.</p>
+                            {/* TODO: - form validation */}
+                            <form onSubmit={this.awardTokens} id="awardTokens">
+                            <label> Address: <input type="text" name="address"/></label>
+                            <label> Amount: <input type="number" name="amount"/></label>
+                            <label> Reason: <input type="text" name="reason" /></label>
+                            <Button variant="outlined" color="primary" size="small" type="submit" id="awardButton">Award</Button>
+                            </form>
+                            </Grid>
+                        </Grid>
 
-                <h2>Award tokens</h2>
-                {/* TODO: - form validation */}
-                <form onSubmit={this.awardTokens}>
-                <label> Address: <input type="text" name="address"/></label>
-                <label> Amount: <input type="number" name="amount"/></label>
-                <label> Reason: <input type="text" name="reason" /></label>
-                <input type="submit" value=" Award " id="awardButton" />
-                </form>
+                        <Grid container justify="center">
+                            <Grid key={0} item>
+                                <h3>Admin Tools</h3>
 
-                <h2>Admin Tools</h2>
-                {contractEnabled ? (
-                    <button onClick={this.tokenEmergencyStop}> Activate Emergency Stop </button>
-                ) : (
-                    <button onClick={this.tokenResumeContract}> Re-enable Contract </button>
-                )}
-                <p></p>
+                                <form onSubmit={this.checkAdmin} id="checkAdmin">
+                                <label> Check address if admin: <input type="text" name="address"/></label>
+                                <Button variant="outlined" color="primary" size="small" type="submit">Check</Button>
+                                </form>
 
-                <form onSubmit={this.checkAdmin}>
-                <label> Address: <input type="text" name="address"/></label>
-                <input type="submit" value=" Check if admin " />
-                </form>
+                                <form onSubmit={this.addAdmin} id="addAdmin">
+                                <label> Add address as admin: <input type="text" name="address"/></label>
+                                <Button variant="outlined" color="primary" size="small" type="submit">Add Admin</Button>
+                                </form>
 
-                <form onSubmit={this.addAdmin}>
-                <label> Address: <input type="text" name="address"/></label>
-                <input type="submit" value=" Add Admin " />
-                </form>
+                                <form onSubmit={this.removeAdmin}>
+                                <label> Remove address as admin: <input type="text" name="address"/></label>
+                                <Button variant="outlined" color="primary" size="small" type="submit">Remove Admin</Button>
+                                </form>
 
-                <form onSubmit={this.removeAdmin}>
-                <label> Address: <input type="text" name="address"/></label>
-                <input type="submit" value=" Remove Admin " />
-                </form>
-                </div>
+                                <p></p>
+
+                                {contractEnabled ? (
+                                    <Button variant="contained" color="primary" onClick={this.tokenEmergencyStop}> Activate Emergency Stop </Button>
+                                ) : (
+                                    <Button variant="contained" color="primary" onClick={this.tokenResumeContract}> Re-enable Contract </Button>
+                                )}
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Grid>
             }
 
-            { /* Everything else */}
+            <Snackbar
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'center',
+              }}
+              open={hasStatusMessage !== ''}
+              autoHideDuration={4000}
+              message={this.state.app.status}
+              onClose={this.handleClose}
+              action={[
+                <IconButton
+                  key="close"
+                  aria-label="Close"
+                  color="inherit"
+                  onClick={this.handleClose}
+                >
+                 <CloseIcon />
+                </IconButton>,
+              ]}
+            >
+            </Snackbar>
 
-            <h1>User Dashboard</h1>
-
-            {this.state.contract.latestIpfsHash &&
-                <div>
-                <h3>Minting transaction history</h3>
-                <button onClick={this.getIpfsReasons}> Load reasons from IPFS </button>
-                <ul> { transactionList.length > 0 ? transactionList : 'No transactions available' } </ul>
-                </div>
-            }
-
-            <h3>Your information</h3>
-            <p>Your balance: {this.state.user.tokenBalance}  {this.state.contract.tokenSymbol}</p>
-            <p>Your address: {this.state.user.currentAddress}</p>
-            <p>You have {((this.state.user.tokenBalance / this.state.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
-
-            <form onSubmit={this.sellTokens}>
-            <label> Amount of {this.state.contract.tokenSymbol} to sell: <input type="text" name="amount"/></label>
-            <input type="submit" value=" Sell tokens " />
-            </form>
-
-            <h2>Token Information</h2>
-            <p>Token name: {this.state.contract.tokenName}</p>
-            <p>Token contract address: {this.state.contract.address}</p>
-            <p>Total supply: {this.state.contract.totalSupply} {this.state.contract.tokenSymbol}</p>
-            <p>Amount of ETH in bonding funds contract: {this.state.contract.ethAmount} ETH</p>
-            {this.state.contract.fundsInstance &&
-                <p>Bonding funds contract address: {this.state.contract.fundsInstance.address}</p>
-            }
-
-            </div>
-            </div>
             </main>
             </div>
         );
