@@ -50,8 +50,14 @@ Requirements:
 4. Open the metamask plugin and select the relevant private network (the one on port 8545). This will connect your metamask with your ganache instance. If you don't see it there, then add a Custom RPC with URL `127.0.01:8545`
 5. Once you've connected, make sure you add the ganache accounts to metamask by importing the private keys. The first account listed in ganache is the default owner and admin.
 
-## Running tests
+## Running tests locally
 Navigate to the project directory and in terminal: `truffle test`
+
+## Interacting with the contracts on Rinkeby
+The contracts are deployed to Rinkeby testnet.
+* KhanaToken.sol: [0xe0ad6d3e2c7c3a7a0512be6216bfe5e69891fe2a](https://rinkeby.etherscan.io/address/0xe0ad6d3e2c7c3a7a0512be6216bfe5e69891fe2a)
+* BondingCurveFunds.sol: [0xaa196e04fd1642db89566da399c3c0081fc0848b](https://rinkeby.etherscan.io/address/0xaa196e04fd1642db89566da399c3c0081fc0848b)
+
 
 ## Misc
 * A discussion on Khana's [design pattern decisions here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/design_pattern_desicions.md)

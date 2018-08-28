@@ -1,0 +1,3 @@
+Live on Rinkeby
+KhanaToken.sol: 0xe0ad6d3e2c7c3a7a0512be6216bfe5e69891fe2a
+BondingCurveFunds.sol: 0xaa196e04fd1642db89566da399c3c0081fc0848b
