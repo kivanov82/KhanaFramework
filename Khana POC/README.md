@@ -1,6 +1,6 @@
 # Khana: Proof of Concept
 
-![PoC interface v.0.1 image](https://github.com/mrdavey/KhanaFramework/tree/master/Khana%20POC/PoC.v.0.1.png)
+![PoC interface v.0.1 image](https://raw.githubusercontent.com/mrdavey/KhanaFramework/master/Khana%20POC/PoC.v.0.1.png)
 
 This repo is the Proof of Concept, completed as part of the final project for Consensys Academy 2018.
 
