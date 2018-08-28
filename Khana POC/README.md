@@ -1,5 +1,7 @@
 # Khana: Proof of Concept
 
+![PoC interface v.0.1 image](https://github.com/mrdavey/KhanaFramework/tree/master/Khana%20POC/PoC.v.0.1.png)
+
 This repo is the Proof of Concept, completed as part of the final project for Consensys Academy 2018.
 
 _Note: I'm not a web developer so this is the first time i've used React, forgive the messy front-end code._
@@ -50,3 +52,15 @@ Requirements:
 
 ## Running tests
 Navigate to the project directory and in terminal: `truffle test`
+
+## Misc
+* A discussion on Khana's [design pattern decisions here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/design_pattern_desicions.md)
+* A discussion on [avoiding common solidity attacks here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/avoiding_common_attacks.md)
+* Tests are [here](https://github.com/mrdavey/KhanaFramework/tree/master/Khana%20POC/test) and should be self explanatory
+* The main token contract is [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/contracts/KhanaToken.sol)
+* The funds contract is [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/contracts/BondingCurveFunds.sol)
+* The simple bonding curve calculation is [here](https://github.com/mrdavey/KhanaFramework/blob/03a96a0a5d9535c53daf961e745d760e5e08c9ca/Khana%20POC/contracts/KhanaToken.sol#L198)
+* IPFS file creation/modification/upload is done via the front end in [App.js](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/src/App.js). Discussion of why this works [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/design_pattern_desicions.md#storage-of-audit-records-in-ipfs).
+
+
+😇🤗📈
