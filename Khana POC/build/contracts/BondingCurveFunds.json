@@ -4958,8 +4958,112 @@
       "links": {},
       "address": "0x48cf3ef6af69a257a68e2350c3ce267e5c47626c",
       "transactionHash": "0x9ed983a72dff3f34db5d1c4c67dda853e3ba6ff014ae40404558965a358b007c"
+    },
+    "1535452539923": {
+      "events": {
+        "0x687b37676ebe4283016bd9c65cf9b57739806755be23a2f5534d34a7ae915e8b": {
+          "anonymous": false,
+          "inputs": [],
+          "name": "LogContractDisabled",
+          "type": "event"
+        },
+        "0xa90445109fa4faeb8720a8d1c9cd6865d77479d2056b9d57fd176b58f572b418": {
+          "anonymous": false,
+          "inputs": [],
+          "name": "LogContractEnabled",
+          "type": "event"
+        },
+        "0x8e50965f27112954dcece2b6acec24689db20cd8a09e23837f4c5cf6bd6a29e8": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "name": "fromAccount",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "name": "oldAddress",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "name": "newAddress",
+              "type": "address"
+            }
+          ],
+          "name": "LogTokenContractChanged",
+          "type": "event"
+        },
+        "0xa62171d5d91ef8d6ea1299955555621ff3ce8e1989f099b5fbb5a67464da6b07": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogFundingReceived",
+          "type": "event"
+        },
+        "0xdf5983565e1f67d7cfa297d3729a3e95ec39dc41c53cfaf9f92bf23e9ad589bd": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "LogEthSent",
+          "type": "event"
+        },
+        "0xf8df31144d9c2f0f6b59d69b8b98abd5459d07f2742c4df920b25aae33c64820": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "name": "previousOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipRenounced",
+          "type": "event"
+        },
+        "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0xae8b3ad772452f6285ed7db07a811f86ac6314ba",
+      "transactionHash": "0x81e06f9cbc16a1b97c0b5987a1e1ed56ff10d5778df77fd4b236520e956594e8"
     }
   },
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-08-27T17:15:28.608Z"
+  "updatedAt": "2018-08-28T10:48:58.541Z"
 }

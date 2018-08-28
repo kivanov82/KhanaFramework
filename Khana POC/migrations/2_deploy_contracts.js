@@ -18,7 +18,8 @@ module.exports = function(deployer, network, accounts) {
         // Fund the bonding curve with 'amountOfEthToFund' when deploying in development environment
         let amountOfEthToFund = 20
 
-        if (network == 'develop') {
+        // Truffle calls it 'develop', ganache calls it 'development'
+        if (network == 'develop' || network == 'development') {
             bondingFundsInstance.sendTransaction({from: accounts[9], value: web3.toWei(amountOfEthToFund, 'ether')}).then((result) => {
                 console.log('Funding contract bonding curve...')
                 console.log('  ... funded with ' + amountOfEthToFund + ' ETH successfully')
