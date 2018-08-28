@@ -541,7 +541,7 @@ class App extends Component {
             {isLoading &&
                 <LinearProgress />
             }
-            <AppBar position="static" color="default">
+            <AppBar position="static" color={contractEnabled ? "primary" :"secondary"} >
                 <Toolbar>
                   <Typography variant="title" color="inherit">
                     Khana: a tokenized framework for community building
@@ -574,10 +574,10 @@ class App extends Component {
                       <Grid container justify="center" spacing={16}>
 
                           <Grid key={0} item>
-                            <h3>Your information</h3>
-                            <p>Your address: <br/>{this.state.user.currentAddress}</p>
-                            <p>Your balance: <br/>{this.state.user.tokenBalance}  {this.state.contract.tokenSymbol}</p>
-                            <p>You have {((this.state.user.tokenBalance / this.state.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
+                            <h3>My information</h3>
+                            <p>My address: <br/>{this.state.user.currentAddress}</p>
+                            <p>My balance: <br/>{this.state.user.tokenBalance}  {this.state.contract.tokenSymbol}</p>
+                            <p>I have {((this.state.user.tokenBalance / this.state.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
                           </Grid>
 
                           <Grid key={1} item>
