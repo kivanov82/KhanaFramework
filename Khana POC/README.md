@@ -2,8 +2,6 @@
 
 This repo is the Proof of Concept, completed as part of the final project for Consensys Academy 2018.
 
-[image]
-
 _Note: I'm not a web developer so this is the first time i've used React, forgive the messy front-end code._
 
 ### What is Khana?
@@ -38,7 +36,7 @@ Requirements:
 * truffle
 * metamask
 
-** Steps **
+**Steps**
 1. Run ganache: `ganache-cli`
     * take note of the accounts and private keys (especially the first one)
 2. In a new terminal window
