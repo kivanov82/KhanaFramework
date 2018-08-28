@@ -23,7 +23,7 @@ import LinearProgress from '@material-ui/core/LinearProgress';
 import Snackbar from '@material-ui/core/Snackbar';
 import CloseIcon from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton';
-
+import Tooltip from '@material-ui/core/Tooltip';
 
 class App extends Component {
 
@@ -508,6 +508,40 @@ class App extends Component {
         this.setState(state)
     };
 
+    handleCopy = async (event) => {
+        console.log(event.currentTarget.id)
+        let state = this.state
+        let value = event.currentTarget.id
+
+        let setState = new Promise(() => {
+            state.needToCopy = true
+            this.setState(state)
+            this.forceUpdate()
+        })
+
+        let setValue = new Promise(() => {
+            console.log(document.getElementById("toBeCopied"))
+            document.getElementById("toBeCopied").value = value
+            console.log(event.currentTarget.id)
+            console.log(document.getElementById("toBeCopied").value)
+        })
+
+        setState.then(() => {
+            return setValue
+        }).then(() => {
+            let copyText = document.getElementById("toBeCopied")
+            copyText.select()
+            console.log(copyText)
+            document.execCommand("copy")
+
+            state.needToCopy = false
+            this.setState(state)
+
+            this.updateState('Copied')
+        })
+
+    }
+
     render() {
         const isLoading = this.state.app.isLoading
         const hasStatusMessage = this.state.app.status
@@ -524,7 +558,7 @@ class App extends Component {
                 return (
                     <TableRow key={tx.ethTxHash}>
                       <TableCell component="th" scope="row">
-                        {tx.minter}
+                        <Tooltip title="Copy address"><Button onClick={this.handleCopy} id={tx.minter}>{tx.minter}</Button></Tooltip>
                       </TableCell>
                       <TableCell>{tx.amount} {this.state.contract.tokenSymbol}</TableCell>
                       <TableCell>{tx.awardedTo}</TableCell>
@@ -725,6 +759,9 @@ class App extends Component {
             >
             </Snackbar>
 
+            {this.state.needToCopy &&
+                <input type="text" value="" id="toBeCopied"/>
+            }
             </main>
             </div>
         );
