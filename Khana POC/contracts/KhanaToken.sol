@@ -20,8 +20,12 @@ contract KhanaToken is MintableToken {
     string public name = "KhanaToken";
     string public symbol = "KHNA";
     uint8 public decimals = 18;
+
+    // Start with 500 tokens, given to the contract owner
     uint public INITIAL_SUPPLY = 500000000000000000000;
-    uint public minimumEthBalance = 1000000000000000000; // Minimum ETH contract should have
+
+    // Minimum ETH contract should have to enable bonding curve
+    uint public minimumEthBalance = 1000000000000000000;
 
     bool public contractEnabled = true;
 
@@ -134,7 +138,8 @@ contract KhanaToken is MintableToken {
     }
 
     /**
-     * @dev Allow token holders to sell their tokens in return for ETH.
+     * @dev Allow token holders to sell their tokens in return for ETH according
+     * to a simple bonding curve.
      * @notice At the moment the calculation for how much ETH is returned is very
      * simplistic. Depending on the portion of the supply they hold, they can
      * liquidate a larger amount of the ETH 'pot', to a maximum of 50% of the pot.
@@ -143,6 +148,7 @@ contract KhanaToken is MintableToken {
      * (0.25 * 0.5 * 100 = 12.5 ETH). See 'whitepaper' for more details around
      * game theory and how this may work as an incentive mechanism. This will
      * likely change in the future to a more complex bonding curve implementation.
+     * Example bonding curve calculations here: https://goo.gl/jeJkV5
      * @param _amount The amount to sell.
      */
     function sell(uint256 _amount) public contractIsEnabled fundsContractIsValid returns (bool) {
