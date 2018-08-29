@@ -34,11 +34,12 @@ A basic simulation of token dynamics can be found here: https://goo.gl/jeJkV5
 ## How to setup
 Requirements:
 * node
+* npm
 * ganache-cli
 * truffle
 * metamask
 
-**Steps**
+#### Steps to run locally
 1. Run ganache: `ganache-cli`
     * take note of the accounts and private keys (especially the first one)
 2. In a new terminal window
@@ -50,14 +51,18 @@ Requirements:
 4. Open the metamask plugin and select the relevant private network (the one on port 8545). This will connect your metamask with your ganache instance. If you don't see it there, then add a Custom RPC with URL `127.0.01:8545`
 5. Once you've connected, make sure you add the ganache accounts to metamask by importing the private keys. The first account listed in ganache is the default owner and admin.
 
-## Running tests locally
-Navigate to the project directory and in terminal: `truffle test`
+#### Steps to run on Rinkeby
+1. Go to the project directory and run the front end: `npm run start`.
+2. Connect MetMask to the Rinkeby network by selecting it in the MetaMask dropdown.
+3. Message me on [Twitter](https://twitter.com/daveytea) with your Rinkeby address and i'll mint you some KHNA tokens.
+    * Also let me know if you'd like to be an admin with another Rinkeby address, so you can mint your own.
 
-## Interacting with the contracts on Rinkeby
-The contracts are deployed to Rinkeby testnet.
+FYI
 * KhanaToken.sol: [0xe0ad6d3e2c7c3a7a0512be6216bfe5e69891fe2a](https://rinkeby.etherscan.io/address/0xe0ad6d3e2c7c3a7a0512be6216bfe5e69891fe2a)
 * BondingCurveFunds.sol: [0xaa196e04fd1642db89566da399c3c0081fc0848b](https://rinkeby.etherscan.io/address/0xaa196e04fd1642db89566da399c3c0081fc0848b)
 
+#### Running tests
+Navigate to the project directory and in terminal: `truffle test`
 
 ## Misc
 * A discussion on Khana's [design pattern decisions here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/design_pattern_desicions.md)

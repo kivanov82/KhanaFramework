@@ -24,6 +24,7 @@ import Snackbar from '@material-ui/core/Snackbar';
 import CloseIcon from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton';
 
+const contractDeployBlockNumber = 2893846
 
 class App extends Component {
 
@@ -124,7 +125,7 @@ class App extends Component {
             }).then((isAdmin) => {
 
                 let awardEventsAll = contractInstance.LogAwarded({}, {
-                    fromBlock: 0,
+                    fromBlock: contractDeployBlockNumber,
                     toBlock: 'latest'
                 })
 
