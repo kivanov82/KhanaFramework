@@ -40,16 +40,17 @@ Requirements:
 * metamask
 
 #### Steps to run locally
-1. Run ganache: `ganache-cli`
+1. In the project directory: `npm install`
+2. Run ganache: `ganache-cli`
     * take note of the accounts and private keys (especially the first one)
-2. In a new terminal window
+3. In a new terminal window
     * go to the project directory
     * open truffle console: `truffle console`
     * compile contracts: `compile`
     * migrate contracts onto ganache: `migrate`
-3. In another terminal window: `npm run start`
-4. Open the metamask plugin and select the relevant private network (the one on port 8545). This will connect your metamask with your ganache instance. If you don't see it there, then add a Custom RPC with URL `127.0.01:8545`
-5. Once you've connected, make sure you add the ganache accounts to metamask by importing the private keys. The first account listed in ganache is the default owner and admin.
+4. In another terminal window: `npm run start`
+5. Open the metamask plugin and select the relevant private network (the one on port 8545). This will connect your metamask with your ganache instance. If you don't see it there, then add a Custom RPC with URL `127.0.01:8545`
+6. Once you've connected, make sure you add the ganache accounts to metamask by importing the private keys. The first account listed in ganache is the default owner and admin.
 
 #### Steps to run on Rinkeby
 1. Go to the project directory and run the front end: `npm run start`.
