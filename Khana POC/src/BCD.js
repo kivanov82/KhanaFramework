@@ -24,7 +24,8 @@ import Snackbar from '@material-ui/core/Snackbar';
 import CloseIcon from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton';
 
-const contractDeployBlockNumber = 2893846
+// const contractDeployBlockNumber = 2893846
+const contractDeployBlockNumber = 0
 
 class App extends Component {
 
@@ -261,14 +262,13 @@ class App extends Component {
 
         let getIpfsFile = new Promise((ipfsResult) => {
             let latestIpfsHash = this.state.contract.latestIpfsHash
+            let newContents = {"timeStamp" : + Date.now(), "toAddress" : address, "fromAddress" : this.state.user.accounts[0], "amount" :  amount, "reason" : reason}
+
             // If there is no existing hash, then we are running for first time and need to create log file on IPFS
             if (!latestIpfsHash) {
-                //Set up IPFS details
-                let newContents = Date.now() + ', ' + address + ', ' + amount + ', ' + reason
-
                 let ipfsContent = {
                     path: '/' + this.state.contract.tokenName,
-                    content: Buffer.from(newContents)
+                    content: Buffer.from('[ ' + JSON.stringify(newContents) + ' ]')
                 }
 
                 this.updateLoadingMessage('Creating inital IPFS file (may take a while)...')
@@ -278,13 +278,15 @@ class App extends Component {
             } else {
                 // Get most recent version of logs first
                 ipfs.files.cat('/ipfs/' + this.state.contract.latestIpfsHash).then((file) => {
-                    let previousContents = file.toString('utf8');
-                    let newContents = Date.now() + ', ' + address + ', ' + amount + ', ' + reason + '\n' + previousContents
+
+                    // Parse the history as JSON, then add an entry to the start of array
+                    let auditHistory = JSON.parse(file.toString('utf8'))
+                    auditHistory.unshift(newContents)
 
                     //Set up IPFS details
                     let ipfsContent = {
                         path: '/' + this.state.contract.tokenName,
-                        content: Buffer.from(newContents)
+                        content: Buffer.from(JSON.stringify(auditHistory))
                     }
 
                     this.updateLoadingMessage('Adding details to IPFS file (may take a while)...')
@@ -473,16 +475,12 @@ class App extends Component {
                 this.updateState(err.message)
             }
 
-            // Get the raw text of the IPFS file, split it per 'new lines', split per comma, and determine if the transaction is relevant for the user's address
-            let fileString = file.toString('utf8')
-            let arrayOfTransactionReasons = fileString.split('\n').map(transaction => {
-                let elements = transaction.split(', ')
-                return elements[3]
-            })
-
+            // Parse JSON to object
+            let auditLog = JSON.parse(file.toString('utf8'))
+            
             let contractState = this.state.contract
             contractState.ipfsLogHistory.forEach( (value, index) => {
-                value.reason = arrayOfTransactionReasons[index]
+                value.reason = auditLog[index].reason
             })
             this.setState({contract: contractState})
             this.updateState('IPFS reasons loaded')
@@ -531,7 +529,7 @@ class App extends Component {
                       <TableCell>{tx.awardedTo}</TableCell>
                       <TableCell numeric>{tx.blockNumber}</TableCell>
                       <TableCell><Button variant="outlined" size="small" href={"https://gateway.ipfs.io/ipfs/" + tx.ipfsHash} target="_blank">IPFS log</Button></TableCell>
-                      <TableCell>{ tx.reason != null ? tx.reason : <Button variant="outlined" size="small" onClick={this.getIpfsReasons}>Load from IPFS</Button>}</TableCell>
+                      <TableCell>{ tx.reason != null ? tx.reason : "reason not loaded"}</TableCell>
                     </TableRow>
                 )
             }
@@ -599,6 +597,8 @@ class App extends Component {
                                      Minting transaction history
                                     </Typography>
                                     <br />
+                                    <Button variant="outlined" size="small" onClick={this.getIpfsReasons}>Load reasons from IPFS</Button>
+                                    <p></p>
 
                                      { transactionList.length > 0 &&
 

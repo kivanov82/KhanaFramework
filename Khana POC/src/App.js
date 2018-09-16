@@ -261,14 +261,13 @@ class App extends Component {
 
         let getIpfsFile = new Promise((ipfsResult) => {
             let latestIpfsHash = this.state.contract.latestIpfsHash
+            let newContents = { "timeStamp": + Date.now(), "toAddress": address, "fromAddress": this.state.user.accounts[0], "amount": amount, "reason": reason }
+
             // If there is no existing hash, then we are running for first time and need to create log file on IPFS
             if (!latestIpfsHash) {
-                //Set up IPFS details
-                let newContents = Date.now() + ', ' + address + ', ' + amount + ', ' + reason
-
                 let ipfsContent = {
                     path: '/' + this.state.contract.tokenName,
-                    content: Buffer.from(newContents)
+                    content: Buffer.from('[ ' + JSON.stringify(newContents) + ' ]')
                 }
 
                 this.updateLoadingMessage('Creating inital IPFS file (may take a while)...')
@@ -278,13 +277,15 @@ class App extends Component {
             } else {
                 // Get most recent version of logs first
                 ipfs.files.cat('/ipfs/' + this.state.contract.latestIpfsHash).then((file) => {
-                    let previousContents = file.toString('utf8');
-                    let newContents = Date.now() + ', ' + address + ', ' + amount + ', ' + reason + '\n' + previousContents
+
+                    // Parse the history as JSON, then add an entry to the start of array
+                    let auditHistory = JSON.parse(file.toString('utf8'))
+                    auditHistory.unshift(newContents)
 
                     //Set up IPFS details
                     let ipfsContent = {
                         path: '/' + this.state.contract.tokenName,
-                        content: Buffer.from(newContents)
+                        content: Buffer.from(JSON.stringify(auditHistory))
                     }
 
                     this.updateLoadingMessage('Adding details to IPFS file (may take a while)...')
@@ -305,7 +306,7 @@ class App extends Component {
             let khanaTokenInstance = this.state.contract.instance
             let accounts = this.state.user.accounts
 
-            khanaTokenInstance.award(address, amount, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(10, 'gwei')}).then((txResult) => {
+            khanaTokenInstance.award(address, amount, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei')}).then((txResult) => {
 
                 this.updateLoadingMessage('Waiting for transaction to confirm...')
 
@@ -465,7 +466,7 @@ class App extends Component {
         })
     }
 
-    getIpfsReasons = async(ipfsHash) => {
+    getIpfsReasons = async (ipfsHash) => {
         this.updateLoadingMessage('Loading IPFS reasons...')
 
         ipfs.files.cat('/ipfs/' + this.state.contract.latestIpfsHash, (err, file) => {
@@ -473,18 +474,14 @@ class App extends Component {
                 this.updateState(err.message)
             }
 
-            // Get the raw text of the IPFS file, split it per 'new lines', split per comma, and determine if the transaction is relevant for the user's address
-            let fileString = file.toString('utf8')
-            let arrayOfTransactionReasons = fileString.split('\n').map(transaction => {
-                let elements = transaction.split(', ')
-                return elements[3]
-            })
+            // Parse JSON to object
+            let auditLog = JSON.parse(file.toString('utf8'))
 
             let contractState = this.state.contract
-            contractState.ipfsLogHistory.forEach( (value, index) => {
-                value.reason = arrayOfTransactionReasons[index]
+            contractState.ipfsLogHistory.forEach((value, index) => {
+                value.reason = auditLog[index].reason
             })
-            this.setState({contract: contractState})
+            this.setState({ contract: contractState })
             this.updateState('IPFS reasons loaded')
         })
     }
