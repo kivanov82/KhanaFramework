@@ -47,15 +47,16 @@ Requirements:
     * go to the project directory
     * open truffle console: `truffle console`
     * compile contracts: `compile`
-    * migrate contracts onto ganache: `migrate`
+    * migrate contracts onto ganache: `migrate` (if any errors, then force a reset with `migrate --reset`)
 4. In another terminal window: `npm run start`
 5. Open the metamask plugin and select the relevant private network (the one on port 8545). This will connect your metamask with your ganache instance. If you don't see it there, then add a Custom RPC with URL `127.0.01:8545`
 6. Once you've connected, make sure you add the ganache accounts to metamask by importing the private keys. The first account listed in ganache is the default owner and admin.
 
 #### Steps to run on Rinkeby
-1. Go to the project directory and run the front end: `npm run start`.
-2. Connect MetMask to the Rinkeby network by selecting it in the MetaMask dropdown.
-3. Message me on [Twitter](https://twitter.com/daveytea) with your Rinkeby address and i'll mint you some KHNA tokens.
+1. In the project directory: `npm install`
+2. Run the front end: `npm run start`.
+3. Connect MetMask to the Rinkeby network by selecting it in the MetaMask dropdown.
+4. Message me on [Twitter](https://twitter.com/daveytea) with your Rinkeby address and i'll mint you some KHNA tokens.
     * Also let me know if you'd like to be an admin with another Rinkeby address, so you can mint your own.
 
 FYI
@@ -73,6 +74,7 @@ Navigate to the project directory and in terminal: `truffle test`
 * The funds contract is [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/contracts/BondingCurveFunds.sol)
 * The simple bonding curve calculation is [here](https://github.com/mrdavey/KhanaFramework/blob/03a96a0a5d9535c53daf961e745d760e5e08c9ca/Khana%20POC/contracts/KhanaToken.sol#L198)
 * IPFS file creation/modification/upload is done via the front end in [App.js](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/src/App.js). Discussion of why this works [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/design_pattern_desicions.md#storage-of-audit-records-in-ipfs).
+* Discussion of dynamic token bonding curves to be implemented [here](https://medium.com/@mrdavey/dynamic-token-bonding-curves-41d36e43befa)
 
 
 😇🤗📈
