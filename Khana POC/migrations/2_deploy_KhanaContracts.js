@@ -5,18 +5,22 @@ module.exports = function(deployer, network, accounts) {
     let khanaInstance
     let bondingFundsInstance
 
+    console.log('  === Deploying Khana prototype contracts...')
+
     deployer.deploy(KhanaToken).then((result) => {
         khanaInstance = KhanaToken.at(KhanaToken.address)
 
         return deployer.deploy(BondingCurveFunds, KhanaToken.address)
-    }).then((result) => {
+    })
+    .then((result) => {
         bondingFundsInstance = BondingCurveFunds.at(BondingCurveFunds.address)
 
         return khanaInstance.setFundsContract(BondingCurveFunds.address, {from: accounts[0]})
-    }).then((result) => {
+    })
+    .then((result) => {
 
         // Fund the bonding curve with 'amountOfEthToFund' when deploying in development environment
-        let amountOfEthToFund = 20
+        let amountOfEthToFund = 10
 
         // Truffle calls it 'develop', ganache calls it 'development'
         if (network == 'develop' || network == 'development') {

@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
-import KhanaToken from '../build/contracts/KhanaToken.json'
-import BondingCurveFunds from '../build/contracts/BondingCurveFunds.json'
+import BlockDamToken from '../build/contracts/BlockDamToken.json'
+import BondingCurveFunds from '../build/contracts/BlockDamBondingCurveFunds.json'
 import getWeb3 from './utils/getWeb3'
 import ipfs from './utils/ipfs';
 
@@ -87,7 +87,7 @@ class App extends Component {
 
     instantiateContract() {
         const contract = require('truffle-contract')
-        const khanaToken = contract(KhanaToken)
+        const khanaToken = contract(BlockDamToken)
         khanaToken.setProvider(this.state.web3.currentProvider)
 
         const bondingCurveFunds = contract(BondingCurveFunds)
