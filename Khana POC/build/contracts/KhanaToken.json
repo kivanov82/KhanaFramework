@@ -858,10 +858,10 @@
           }
         ],
         "contractDependencies": [
-          1460,
           843,
           912,
-          997
+          997,
+          1460
         ],
         "contractKind": "contract",
         "documentation": "@title Proof of Concept contract for the Khana framework\n@author David Truong <david@truong.vc>\n@dev This is a mintable token with a group of admins who can mint them (i.e.\naward them) to community members, record the IPFS hash of the reasons associated\nwith each minting, and a simple bonding curve where token holders can redeem\nETH for tokens they've received.\nFor more information, see: https://goo.gl/z7VdXg",
@@ -6626,10 +6626,10 @@
           }
         ],
         "contractDependencies": [
-          1460,
           843,
           912,
-          997
+          997,
+          1460
         ],
         "contractKind": "contract",
         "documentation": "@title Proof of Concept contract for the Khana framework\n@author David Truong <david@truong.vc>\n@dev This is a mintable token with a group of admins who can mint them (i.e.\naward them) to community members, record the IPFS hash of the reasons associated\nwith each minting, and a simple bonding curve where token holders can redeem\nETH for tokens they've received.\nFor more information, see: https://goo.gl/z7VdXg",
@@ -12935,8 +12935,8 @@
         }
       },
       "links": {},
-      "address": "0x04f3e4354a9e0a5ed0a3bdbc4eeabd6474466fd4",
-      "transactionHash": "0x8cb33d925c56e33ee219d3ad4aa1ac7c6185080dcdf3131d3ae19ebe0c5046e0"
+      "address": "0x385eb6144f181190c3323f163d608e18b994adb4",
+      "transactionHash": "0xbacab8b36b560ca0826c5513096966d56f5e85e74bc67fe0cd190e269c49fc98"
     },
     "1534837247447": {
       "events": {},
@@ -13169,5 +13169,5 @@
     }
   },
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-09-16T20:55:01.338Z"
+  "updatedAt": "2018-09-17T19:08:00.906Z"
 }

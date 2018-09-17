@@ -1,7 +1,6 @@
 pragma solidity ^0.4.24;
 
 import "../KhanaToken.sol";
-// import "./BlockDamBondingCurveFunds.sol";
 
 /**
  * @title Proof of Concept contract for the Khana framework, for BlockDam community

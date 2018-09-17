@@ -450,9 +450,9 @@
           }
         ],
         "contractDependencies": [
-          1460,
           843,
-          912
+          912,
+          1460
         ],
         "contractKind": "contract",
         "documentation": "@title Mintable token\n@dev Simple ERC20 Token example, with mintable token creation\nBased on code by TokenMarketNet: https://github.com/TokenMarketNet/ico/blob/master/contracts/MintableToken.sol",
@@ -1444,9 +1444,9 @@
           }
         ],
         "contractDependencies": [
-          1460,
           843,
-          912
+          912,
+          1460
         ],
         "contractKind": "contract",
         "documentation": "@title Mintable token\n@dev Simple ERC20 Token example, with mintable token creation\nBased on code by TokenMarketNet: https://github.com/TokenMarketNet/ico/blob/master/contracts/MintableToken.sol",
@@ -2361,5 +2361,5 @@
   },
   "networks": {},
   "schemaVersion": "2.0.1",
-  "updatedAt": "2018-09-16T19:22:15.504Z"
+  "updatedAt": "2018-09-17T13:26:14.691Z"
 }
