@@ -9,8 +9,8 @@ import BondingCurveFunds from '../build/contracts/BondingCurveFunds.json'
 // Update this value so we don't have to transverse the entire blockchain to find events
 //
 
-const contractDeployBlockNumber = 0   // For use when developing
-// const contractDeployBlockNumber = 2893846   // KHNA Rinkeby deployment block
+// const contractDeployBlockNumber = 0   // For use when developing
+const contractDeployBlockNumber = 3009494   // KHNA Rinkeby deployment block
 
 //
 // Shared components
