@@ -106,6 +106,36 @@ class Admin extends Component {
         })
     }
 
+    burnTokens = async(event) => {
+        event.preventDefault();
+        document.getElementById("burnTokens").disabled = true;
+
+        let web3 = this.props.state.web3
+
+        // Set state
+        let address = event.target.address.value
+        let amount = web3.toWei(event.target.amount.value, 'ether')
+
+        let khanaTokenInstance = this.props.state.contract.instance
+        let accounts = this.props.state.user.accounts
+
+        khanaTokenInstance.burn(address, amount, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+
+            this.props.updateLoadingMessage('Waiting for transaction to confirm...')
+
+            let burnEvent = khanaTokenInstance.LogBurned({ fromBlock: 'latest' }, (err, response) => {
+
+                // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
+                if (response.blockNumber >= txResult.receipt.blockNumber) {
+                    this.props.updateState('Transaction confirmed with hash: ' + response.transactionHash);
+                    burnEvent.stopWatching()
+                }
+            })
+        }).catch((error) => {
+            this.props.updateState(error.message)
+        })
+    }
+
     checkAdmin = async (event) => {
         event.preventDefault();
         this.props.updateLoadingMessage('Checking if address is an admin...')
@@ -196,7 +226,7 @@ class Admin extends Component {
         return (
             <Grid container>
                 <Grid item md>
-                    <Grid container justify="center">
+                    <Grid container justify="left">
                         <Grid key={0} item>
                             <h3>Award tokens</h3>
                             <p>Award tokens to community members for their contributions and participation.</p>
@@ -210,7 +240,18 @@ class Admin extends Component {
                         </Grid>
                     </Grid>
 
-                    <Grid container justify="center">
+                    <Grid container justify="left">
+                        <Grid key={0} item>
+                            <h3>Burn tokens</h3>
+                            <p>Burn tokens belonging to community members.</p>
+                            <form onSubmit={this.burnTokens} id="burnTokens">
+                                <label> Address: <input type="text" name="address" /></label>
+                                <label> Amount: <input type="number" name="amount" /></label>
+                                <Button variant="outlined" color="primary" size="small" type="submit" id="burnTokens">Burn</Button>
+                            </form>
+                        </Grid>
+                    </Grid>
+                    <Grid container justify="left">
                         <Grid key={0} item>
                             <h3>Admin Tools</h3>
 

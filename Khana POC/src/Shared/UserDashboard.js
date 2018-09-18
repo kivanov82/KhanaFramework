@@ -51,16 +51,17 @@ class UserDashboard extends Component {
         return (
             <Grid container spacing={8}>
                 <Grid item md>
-                    <Grid container justify="center" spacing={16}>
-
+                    <Grid container justify="left" spacing={16}>
                         <Grid key={0} item>
                             <h3>My information</h3>
                             <p>My address: <br />{this.props.user.currentAddress}</p>
                             <p>My balance: <br />{this.props.user.tokenBalance}  {this.props.contract.tokenSymbol}</p>
                             <p>I have {((this.props.user.tokenBalance / this.props.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
                         </Grid>
+                    </Grid>
 
-                        <Grid key={1} item>
+                    <Grid container justify="left" spacing={16}>
+                        <Grid key={0} item>
                             <h3>Sell my tokens</h3>
                             <p>You can easily liquidate your tokens back to the contract, <br />receiving ETH based on a bonding curve.</p>
                             <form onSubmit={this.sellTokens} id="contained-button-submit">
@@ -69,8 +70,11 @@ class UserDashboard extends Component {
                                 </label>
                                 <Button variant="outlined" color="primary" size="small" type="submit">Sell tokens</Button>
                             </form>
+                            <p></p>
                         </Grid>
+                    </Grid>
 
+                    <Grid container justify="center" spacing={16}>
                         <TxHistory 
                             user={this.props.user}
                             contract={this.props.contract} 
@@ -78,7 +82,6 @@ class UserDashboard extends Component {
                             updateState={this.props.updateState}
                             updateStaticState={this.props.updateStaticState}
                             />
-
                     </Grid>
                 </Grid>
             </Grid>

@@ -42,16 +42,20 @@ contract KhanaToken is MintableToken {
         address indexed minter,
         uint amount,
         string ipfsHash
-        );
+    );
     event LogSell(
         address sellingAccount,
         uint256 sellAmount,
         uint256 ethReceived
-        );
+    );
     event LogFundsContractChanged(
         address oldContract,
         address newContract
-        );
+    );
+    event LogBurned(
+        address indexed burnFrom,
+        uint amount
+    );
 
     /**
      * @dev The owner is automatically set by Ownable.sol. The owner is also added
@@ -288,6 +292,7 @@ contract KhanaToken is MintableToken {
         uint256 _amount
     ) public onlyOwner {
         _burn(_account, _amount);
+        emit LogBurned(_account, _amount);
     }
 
     /**

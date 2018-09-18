@@ -7,7 +7,7 @@ class TokenInformation extends Component {
         return(
             <Grid container spacing={8}>
                 <Grid item md>
-                    <Grid container justify="center" spacing={16}>
+                    <Grid container justify="left" spacing={16}>
 
                         <Grid key={0} item>
                             <h3>Token Information</h3>
@@ -15,8 +15,10 @@ class TokenInformation extends Component {
                             <p>Token contract address: <br />{this.props.contract.address}</p>
                             <p>Total supply: <br />{this.props.contract.totalSupply} {this.props.contract.tokenSymbol}</p>
                         </Grid>
+                    </Grid>
 
-                        <Grid key={1} item>
+                    <Grid container justify="left" spacing={16}>
+                        <Grid key={0} item>
                             <h3>Bonding Curve Funds contract</h3>
                             <p>Amount of ETH in funds contract: {this.props.contract.ethAmount} ETH</p>
                             {this.props.contract.fundsInstance &&
