@@ -264,21 +264,18 @@ contract('KhanaToken', function(accounts) {
     it("should be able to burn tokens (as owner)", async () => {
         await khana.burn(bob, bobBalance, {from: owner});
 
-        // Transfer event is emitted in StandardToken.sol, with the event detailed in ERC20.sol
-        const Transfer = await khana.Transfer();
+        const Burned = await khana.LogBurned();
         const log = await new Promise((resolve, reject) => {
-            Transfer.watch((error, log) => { resolve(log);});
+            Burned.watch((error, log) => { resolve(log);});
         });
 
-        const expectedEventResult = {from: bob, to: '0x0000000000000000000000000000000000000000', value: bobBalance}
+        const expectedEventResult = { burnFrom: bob, amount: bobBalance }
 
-        const logFromAddress = log.args.from;
-        const logToAddress = log.args.to;
-        const logvalue = log.args.value.toNumber();
+        const logBurnFromAddress = log.args.burnFrom;
+        const logAmount = log.args.amount.toNumber();
 
-        assert.equal(expectedEventResult.from, logFromAddress, "Burn event from property not emitted correctly, check burn method");
-        assert.equal(expectedEventResult.to, logToAddress, "Burn event to property not emitted correctly, check burn method");
-        assert.equal(expectedEventResult.value, logvalue, "Burn event value property not emitted correctly, check burn method");
+        assert.equal(expectedEventResult.burnFrom, logBurnFromAddress, "Burn event from property not emitted correctly, check burn method");
+        assert.equal(expectedEventResult.amount, logAmount, "Burn event value property not emitted correctly, check burn method");
 
         // balanceOf function is inherited from StandardToken.sol
         const bobsNewBalance = (await khana.balanceOf(bob)).toNumber();

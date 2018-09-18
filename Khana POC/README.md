@@ -59,10 +59,6 @@ Requirements:
 4. Message me on [Twitter](https://twitter.com/daveytea) with your Rinkeby address and i'll mint you some KHNA tokens.
     * Also let me know if you'd like to be an admin with another Rinkeby address, so you can mint your own.
 
-FYI
-* KhanaToken.sol: [0xe0ad6d3e2c7c3a7a0512be6216bfe5e69891fe2a](https://rinkeby.etherscan.io/address/0xe0ad6d3e2c7c3a7a0512be6216bfe5e69891fe2a)
-* BondingCurveFunds.sol: [0xaa196e04fd1642db89566da399c3c0081fc0848b](https://rinkeby.etherscan.io/address/0xaa196e04fd1642db89566da399c3c0081fc0848b)
-
 #### Running tests
 Navigate to the project directory and in terminal: `truffle test`
 
@@ -78,3 +74,25 @@ Navigate to the project directory and in terminal: `truffle test`
 
 
 😇🤗📈
+
+## Current deployments
+*subject to regular changes
+
+### KhanaToken Rinkeby
+This is the proof of concept, used for testing and showing the concept.
+
+[Basic front end](http://khana.io/) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
+
+[KhanaToken contract](https://rinkeby.etherscan.io/address/0xafcb7969c32e213ab5482c972f151154c1a73f77)
+
+[BondingCurve contract](https://rinkeby.etherscan.io/address/0x7b12642dfc0a675f2c6edc6515a2b5e6a1003972)
+
+### BlockDam Token Rinkeby
+This is a pilot project for the [BlockDam commmunity](https://www.meetup.com/Permissionless-Society/), based in Amsterdam.
+
+[Basic front end](http://khana.io/blockdam) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
+
+[BlockDam contract](https://rinkeby.etherscan.io/address/0xafcb7969c32e213ab5482c972f151154c1a73f77)
+
+[BondingCurve contract](https://rinkeby.etherscan.io/address/0x7b12642dfc0a675f2c6edc6515a2b5e6a1003972)
+

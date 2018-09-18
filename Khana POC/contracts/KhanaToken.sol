@@ -1,8 +1,8 @@
 pragma solidity ^0.4.24;
 
-import 'openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import './BondingCurveFunds.sol';
+import "./BondingCurveFunds.sol";
 
 /**
  * @title Proof of Concept contract for the Khana framework
@@ -11,7 +11,7 @@ import './BondingCurveFunds.sol';
  * award them) to community members, record the IPFS hash of the reasons associated
  * with each minting, and a simple bonding curve where token holders can redeem
  * ETH for tokens they've received.
- * For more information, see: https://medium.com/@mrdavey/dynamic-token-bonding-curves-41d36e43befa
+ * For more information, see: https://goo.gl/z7VdXg
  */
 
 contract KhanaToken is MintableToken {
@@ -42,16 +42,20 @@ contract KhanaToken is MintableToken {
         address indexed minter,
         uint amount,
         string ipfsHash
-        );
+    );
     event LogSell(
         address sellingAccount,
         uint256 sellAmount,
         uint256 ethReceived
-        );
+    );
     event LogFundsContractChanged(
         address oldContract,
         address newContract
-        );
+    );
+    event LogBurned(
+        address indexed burnFrom,
+        uint amount
+    );
 
     /**
      * @dev The owner is automatically set by Ownable.sol. The owner is also added
@@ -288,6 +292,7 @@ contract KhanaToken is MintableToken {
         uint256 _amount
     ) public onlyOwner {
         _burn(_account, _amount);
+        emit LogBurned(_account, _amount);
     }
 
     /**
