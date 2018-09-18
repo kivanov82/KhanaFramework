@@ -15,9 +15,11 @@ const BasicRoute = () => (
     <Router>
         <div>
         <Route exact path='/' component={KhanaComponent} />
-        <Route path='/BCD' component={BlockDamComponent} />
+        <Route exact path='/blockdam' component={BlockDamComponent} />
         </div>
     </Router>
 );
 
 export default BasicRoute;
+
+// Remember to create .htaccess file: https://stackoverflow.com/a/38827810/4769084
