@@ -12,10 +12,10 @@ const BlockDamComponent = () => (
 )
 
 const BasicRoute = () => (
-    <Router>
+    <Router basename="/app">
         <div>
         <Route exact path='/' component={KhanaComponent} />
-        <Route exact path='/blockdam' component={BlockDamComponent} />
+        <Route path='/blockdam' component={BlockDamComponent} />
         </div>
     </Router>
 );

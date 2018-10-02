@@ -154,7 +154,7 @@ class Admin extends Component {
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
-        khanaTokenInstance.addAdmin(event.target.address.value, { from: accounts[0] }).then(() => {
+        khanaTokenInstance.addAdmin(event.target.address.value, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let addedEvent = khanaTokenInstance.LogAdminAdded({ fromBlock: 'latest' }, (err, response) => {
@@ -172,7 +172,7 @@ class Admin extends Component {
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
-        khanaTokenInstance.removeAdmin(event.target.address.value, { from: accounts[0], gas: 100000 }).then(() => {
+        khanaTokenInstance.removeAdmin(event.target.address.value, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let removedEvent = khanaTokenInstance.LogAdminRemoved({ fromBlock: 'latest' }, (err, response) => {
@@ -191,7 +191,7 @@ class Admin extends Component {
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.emergencyStop({ from: accounts[0] }).then((success) => {
+        khanaTokenInstance.emergencyStop({ from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let disabledEvent = khanaTokenInstance.LogContractDisabled({ fromBlock: 'latest' }, (err, response) => {
@@ -210,7 +210,7 @@ class Admin extends Component {
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.resumeContract({ from: accounts[0] }).then((success) => {
+        khanaTokenInstance.resumeContract({ from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let enabledEvent = khanaTokenInstance.LogContractEnabled({ fromBlock: 'latest' }, (err, response) => {
