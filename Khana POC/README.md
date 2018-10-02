@@ -2,7 +2,9 @@
 
 ![PoC interface v.0.1 image](https://raw.githubusercontent.com/mrdavey/KhanaFramework/master/Khana%20POC/PoC.v.0.1.png)
 
-This repo is the Proof of Concept, completed as part of the final project for Consensys Academy 2018.
+This repo is the Proof of Concept, more info on Medium
+ - [Incentivising participation and growth in communities (using crypto-economics)](https://medium.com/@mrdavey/incentivising-participation-and-growth-in-communities-using-crypto-economics-5a369dd7f5fc)
+  - [Dynamic Token Bonding Curves](https://medium.com/@mrdavey/dynamic-token-bonding-curves-41d36e43befa)
 
 _Note: I'm not a web developer so this is the first time i've used React, forgive the messy front-end code._
 
@@ -81,7 +83,7 @@ Navigate to the project directory and in terminal: `truffle test`
 ### KhanaToken Rinkeby
 This is the proof of concept, used for testing and showing the concept.
 
-[Basic front end](http://khana.io/) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
+[Basic front end](http://khana.io/app/) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
 
 [KhanaToken contract](https://rinkeby.etherscan.io/address/0xafcb7969c32e213ab5482c972f151154c1a73f77)
 
@@ -90,7 +92,7 @@ This is the proof of concept, used for testing and showing the concept.
 ### BlockDam Token Rinkeby
 This is a pilot project for the [BlockDam commmunity](https://www.meetup.com/Permissionless-Society/), based in Amsterdam.
 
-[Basic front end](http://khana.io/blockdam) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
+[Basic front end](http://khana.io/app/blockdam) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
 
 [BlockDam contract](https://rinkeby.etherscan.io/address/0xafcb7969c32e213ab5482c972f151154c1a73f77)
 
