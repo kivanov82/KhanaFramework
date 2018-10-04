@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import ipfs from '../utils/ipfs';
+import {shortenAddress, endPoints} from '../utils/helpers';
 
 import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
@@ -12,6 +13,15 @@ import TableCell from '@material-ui/core/TableCell';
 import TableBody from '@material-ui/core/TableBody';
 
 class TxHistory extends Component {
+
+    constructor(props) {
+        super(props)
+
+        this.state = {
+            reasonsLoaded: false
+        }
+    }
+    
     getIpfsReasons = async (ipfsHash) => {
         this.props.updateLoadingMessage('Loading IPFS reasons...')
 
@@ -29,28 +39,36 @@ class TxHistory extends Component {
             })
             this.props.updateStaticState({ contract: contractState })
             this.props.updateState('IPFS reasons loaded')
+            this.setState({ reasonsLoaded: true })
         })
+
     }
 
     render() {
-        const transactionList = this.props.contract.ipfsLogHistory.sort((a, b) => {
+        const sortedTxList = this.props.contract.ipfsLogHistory.sort((a, b) => {
             return a.blockNumber < b.blockNumber ? 1 : -1
-        }).map(tx => {
-
+        })
+        
+        const transactionList = sortedTxList.map(tx => {
             // If normal user (i.e. non-admin) then only show their transactions
             if (!this.props.user.isAdmin && tx.awardedTo !== this.props.user.currentAddress) {
                 return null
             } else {
+                if (tx.minter == null) { return null }
                 return (
-                    <TableRow key={tx.ethTxHash}>
+                    <TableRow key={tx.ethTxHash} hover>
                         <TableCell component="th" scope="row">
-                            {tx.minter}
+                            {shortenAddress(tx.minter)}
                         </TableCell>
                         <TableCell>{tx.amount} {this.props.contract.tokenSymbol}</TableCell>
-                        <TableCell>{tx.awardedTo}</TableCell>
-                        <TableCell numeric>{tx.blockNumber}</TableCell>
-                        <TableCell><Button variant="outlined" size="small" href={"https://gateway.ipfs.io/ipfs/" + tx.ipfsHash} target="_blank">IPFS log</Button></TableCell>
-                        <TableCell>{tx.reason != null ? tx.reason : "reason not loaded"}</TableCell>
+                        <TableCell>{shortenAddress(tx.awardedTo)}</TableCell>
+                        <TableCell numeric><a href={endPoints.blockExplorer + "tx/" + tx.ethTxHash} target="_blank">{tx.blockNumber}</a></TableCell>
+                        {tx.reason != null ? (
+                            <TableCell>{tx.reason}</TableCell>
+                        ) : (
+                            <TableCell><a href={endPoints.ipfsEndpoint + tx.ipfsHash} target="_blank">Raw Log</a></TableCell>
+                        )
+                        }
                     </TableRow>
                 )
             }
@@ -63,23 +81,25 @@ class TxHistory extends Component {
 
                     <Typography variant="headline" component="h3">
                         Minting transaction history
-                                </Typography>
+                    </Typography>
                     <br />
-                    <Button variant="outlined" size="small" onClick={this.getIpfsReasons}>Load reasons from IPFS</Button>
+                    {this.state.reasonsLoaded === false &&
+                        <Button variant="outlined" size="small" onClick={this.getIpfsReasons}>Load audit reasons</Button>
+                    }
+                    <Button variant="outlined" size="small" href={endPoints.ipfsEndpoint + sortedTxList[0].ipfsHash} target="_blank">Get latest raw log</Button>
                     <p></p>
 
                     {transactionList.length > 0 &&
 
                         <Paper>
-                            <Table>
+                            <Table padding='dense'>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Minter address</TableCell>
-                                        <TableCell>Amount minted</TableCell>
-                                        <TableCell>Receiver address</TableCell>
+                                        <TableCell>Minter</TableCell>
+                                        <TableCell>Amount</TableCell>
+                                        <TableCell>Receiver</TableCell>
                                         <TableCell>Block #</TableCell>
-                                        <TableCell>Audit trail</TableCell>
-                                        <TableCell>Reason given</TableCell>
+                                        <TableCell>Reasons</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>

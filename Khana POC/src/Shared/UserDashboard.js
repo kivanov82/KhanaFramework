@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import {shortenAddress} from '../utils/helpers';
 
 import TxHistory from './TxHistory';
 
@@ -47,14 +48,14 @@ class UserDashboard extends Component {
     }
 
     render() {
-
+        
         return (
             <Grid container spacing={8}>
                 <Grid item md>
                     <Grid container justify="left" spacing={16}>
                         <Grid key={0} item>
                             <h3>My information</h3>
-                            <p>My address: <br />{this.props.user.currentAddress}</p>
+                            <p>My address: <br />{shortenAddress(this.props.user.currentAddress)}</p>
                             <p>My balance: <br />{this.props.user.tokenBalance}  {this.props.contract.tokenSymbol}</p>
                             <p>I have {((this.props.user.tokenBalance / this.props.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
                         </Grid>
