@@ -289,7 +289,12 @@ class App extends Component {
 
                     { /* Token information section */}
                     { this.state.navigation === 1 &&
-                        <TokenInformation contract={this.state.contract} />
+                        <TokenInformation
+                            contract={this.state.contract}
+                            updateLoadingMessage={this.updateLoadingMessage}
+                            updateStaticState={this.updateStaticState}
+                            updateState={this.updateState}
+                        />
                     }
 
                     { /* Admin section */}
