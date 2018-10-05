@@ -21,9 +21,6 @@ contract KhanaToken is MintableToken {
     string public symbol = "KHNA";
     uint8 public decimals = 18;
 
-    // Start with 500 tokens, given to the contract owner
-    uint public INITIAL_SUPPLY = 500000000000000000000;
-
     // Minimum ETH contract should have to enable bonding curve
     uint public minimumEthBalance = 1000000000000000000;
 
@@ -63,7 +60,6 @@ contract KhanaToken is MintableToken {
      */
     constructor() public {
         adminAccounts[msg.sender] = true;
-        mint(msg.sender, INITIAL_SUPPLY);
     }
 
     /**

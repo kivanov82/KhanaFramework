@@ -25,11 +25,8 @@ class Navigation extends Component {
                 <AppBar position="static" color={this.props.state.contract.contractEnabled ? "primary" : "secondary"} >
                     <Toolbar>
                         <Typography variant="title" color="inherit">
-                            Khana: a tokenized framework for community building
+                            Khana framework: {this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})
                             <br />
-                            <Typography variant="body1" color="inherit">
-                                {this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})
-                            </Typography>
                         </Typography>
                     </Toolbar>
                     
@@ -43,8 +40,8 @@ class Navigation extends Component {
                         textColor="primary"
                         centered
                     >
-                        <Tab label="User dashboard" />
-                        <Tab label="Token information" />
+                        <Tab label="Dashboard" />
+                        <Tab label="History" />
                         {this.props.state.user.isAdmin &&
                             <Tab label="Admin" />
                         }

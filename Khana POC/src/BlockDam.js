@@ -111,10 +111,15 @@ class App extends Component {
 
         this.state.web3.eth.getAccounts((error, accounts) => {
             if (error) {
-                console.log(error);
+                this.updateStaticState({ app: { status: 'Error occured: ' + error, isLoading: true } })
                 return
             }
 
+            if (accounts.length === 0) {
+                this.updateStaticState({ app: { status: 'No accounts detected! Have you unlocked your wallet?', isLoading: true } })
+                return
+            }
+            
             tokenContract.deployed().then((tokenInstance) => {
                 contractInstance = tokenInstance
             }).then(() => {

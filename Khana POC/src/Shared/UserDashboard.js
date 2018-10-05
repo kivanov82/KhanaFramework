@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
-
-import TxHistory from './TxHistory';
+import {shortenAddress} from '../utils/helpers';
 
 import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
@@ -47,42 +46,47 @@ class UserDashboard extends Component {
     }
 
     render() {
-
+        
         return (
             <Grid container spacing={8}>
                 <Grid item md>
                     <Grid container justify="left" spacing={16}>
                         <Grid key={0} item>
-                            <h3>My information</h3>
-                            <p>My address: <br />{this.props.user.currentAddress}</p>
-                            <p>My balance: <br />{this.props.user.tokenBalance}  {this.props.contract.tokenSymbol}</p>
-                            <p>I have {((this.props.user.tokenBalance / this.props.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
+                            <h4>My information</h4>
+                            <p>My address: {shortenAddress(this.props.user.currentAddress)}<br />
+                            My balance: {this.props.user.tokenBalance}  {this.props.contract.tokenSymbol}<br />
+                            I have {((this.props.user.tokenBalance / this.props.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
                         </Grid>
                     </Grid>
 
                     <Grid container justify="left" spacing={16}>
                         <Grid key={0} item>
-                            <h3>Sell my tokens</h3>
-                            <p>You can easily liquidate your tokens back to the contract, <br />receiving ETH based on a bonding curve.</p>
-                            <form onSubmit={this.sellTokens} id="contained-button-submit">
-                                <label htmlFor="contained-button-submit"> Amount of {this.props.contract.tokenSymbol} to sell: <br />
-                                    <input type="text" name="amount" />
-                                </label>
-                                <Button variant="outlined" color="primary" size="small" type="submit">Sell tokens</Button>
-                            </form>
-                            <p></p>
+                            <h4>Token Information</h4>
+                            <p>{this.props.contract.tokenName} contract address: {shortenAddress(this.props.contract.address)}<br />
+                                Total supply: {this.props.contract.totalSupply} {this.props.contract.tokenSymbol}</p>
+                            {this.props.contract.fundsInstance &&
+                                <p>Bonding curve address: {shortenAddress(this.props.contract.fundsInstance.address)}<br />
+                                    ETH in bonding curve: {this.props.contract.ethAmount} ETH</p>
+                            }
                         </Grid>
                     </Grid>
 
-                    <Grid container justify="center" spacing={16}>
-                        <TxHistory 
-                            user={this.props.user}
-                            contract={this.props.contract} 
-                            updateLoadingMessage={this.props.updateLoadingMessage} 
-                            updateState={this.props.updateState}
-                            updateStaticState={this.props.updateStaticState}
-                            />
-                    </Grid>
+                    {this.props.user.tokenBalance > 0 &&
+                        <Grid container justify="left" spacing={16}>
+                            <Grid key={0} item>
+                                <h4>Sell my tokens</h4>
+                                <p>Sell your tokens to the bonding curve below</p>
+                                <form onSubmit={this.sellTokens} id="contained-button-submit">
+                                    <label htmlFor="contained-button-submit"> Amount of {this.props.contract.tokenSymbol} to sell: <br />
+                                        <input type="text" name="amount" />
+                                    </label>
+                                    <Button variant="outlined" color="primary" size="small" type="submit">Sell tokens</Button>
+                                </form>
+                                <p></p>
+                            </Grid>
+                        </Grid>
+                    }
+                    
                 </Grid>
             </Grid>
         )
