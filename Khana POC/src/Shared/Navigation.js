@@ -41,7 +41,7 @@ class Navigation extends Component {
                         centered
                     >
                         <Tab label="Dashboard" />
-                        <Tab label="Token info" />
+                        <Tab label="History" />
                         {this.props.state.user.isAdmin &&
                             <Tab label="Admin" />
                         }

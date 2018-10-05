@@ -228,13 +228,13 @@ class Admin extends Component {
                 <Grid item md>
                     <Grid container justify="left">
                         <Grid key={0} item>
-                            <h3>Award tokens</h3>
-                            <p>Award tokens to community members for their contributions and participation.</p>
+                            <h4>Token actions</h4>
+                            <p><b>Award</b> tokens to community members for their contributions and participation.</p>
                             {/* TODO: - form validation */}
                             <form onSubmit={this.awardTokens} id="awardTokens">
-                                <label> Address: <input type="text" name="address" /></label>
-                                <label> Amount: <input type="number" name="amount" /></label>
-                                <label> Reason: <input type="text" name="reason" /></label>
+                                <label> Address: <input type="text" name="address" /></label><br />
+                                <label> Amount: <input type="number" name="amount" /></label><br />
+                                <label> Reason: <input type="text" name="reason" /></label><br />
                                 <Button variant="outlined" color="primary" size="small" type="submit" id="awardButton">Award</Button>
                             </form>
                         </Grid>
@@ -242,31 +242,32 @@ class Admin extends Component {
 
                     <Grid container justify="left">
                         <Grid key={0} item>
-                            <h3>Burn tokens</h3>
-                            <p>Burn tokens belonging to community members.</p>
+                            <p><b>Burn</b> tokens belonging to community members.</p>
                             <form onSubmit={this.burnTokens} id="burnTokens">
-                                <label> Address: <input type="text" name="address" /></label>
-                                <label> Amount: <input type="number" name="amount" /></label>
+                                <label> Address: <input type="text" name="address" /></label><br />
+                                <label> Amount: <input type="number" name="amount" /></label><br />
                                 <Button variant="outlined" color="primary" size="small" type="submit" id="burnTokens">Burn</Button>
                             </form>
                         </Grid>
                     </Grid>
                     <Grid container justify="left">
                         <Grid key={0} item>
-                            <h3>Admin Tools</h3>
+                            <h4>Admin Tools</h4>
 
                             <form onSubmit={this.checkAdmin} id="checkAdmin">
-                                <label> Check address if admin: <input type="text" name="address" /></label>
+                                <label> <b>Check</b> if address is admin: <input type="text" name="address" /></label><br />
                                 <Button variant="outlined" color="primary" size="small" type="submit">Check</Button>
                             </form>
+                            <br />
 
                             <form onSubmit={this.addAdmin} id="addAdmin">
-                                <label> Add address as admin: <input type="text" name="address" /></label>
+                                <label> <b>Add</b> address as admin: <input type="text" name="address" /></label><br />
                                 <Button variant="outlined" color="primary" size="small" type="submit">Add Admin</Button>
                             </form>
+                            <br />
 
                             <form onSubmit={this.removeAdmin}>
-                                <label> Remove address as admin: <input type="text" name="address" /></label>
+                                <label> <b>Remove</b> address as admin: <input type="text" name="address" /></label><br />
                                 <Button variant="outlined" color="primary" size="small" type="submit">Remove Admin</Button>
                             </form>
 

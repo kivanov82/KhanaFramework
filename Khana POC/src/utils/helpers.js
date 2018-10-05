@@ -8,5 +8,5 @@ export let endPoints = {
 export function shortenAddress(address) {
     if (address == null) { return null }
     let shortAddress = address.substr(0, 6) + '...' + address.substr(address.length - 4)
-    return <a href={endPoints + "address/" + address} target="_blank">{shortAddress}</a>
+    return <a href={endPoints.blockExplorer + "address/" + address} target="_blank">{shortAddress}</a>
 }
