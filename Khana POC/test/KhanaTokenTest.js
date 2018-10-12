@@ -1,3 +1,5 @@
+const truffleAssert = require('truffle-assertions');
+const BN = web3.utils.BN;
 var KhanaToken = artifacts.require("./KhanaToken.sol");
 var BondingCurveFunds = artifacts.require("./BondingCurveFunds.sol");
 
@@ -20,13 +22,10 @@ contract('KhanaToken', function(accounts) {
     });
 
     it("should be able to set new admin (as owner)", async () => {
-        await khana.addAdmin(alice, {from: owner});
-        const AdminAdded = await khana.LogAdminAdded();
-        const log = await new Promise((resolve, reject) => {
-            AdminAdded.watch((error, log) => { resolve(log);});
-        });
-
-        assert.equal(log.args.account, alice, "AdminAdded event account address incorrectly emitted");
+        let tx = await khana.addAdmin(alice, {from: owner});
+        truffleAssert.eventEmitted(tx, 'LogAdminAdded', (ev) => {
+            return ev.account === alice;
+        }, "AdminAdded event account address incorrectly emitted");
 
         const aliceIsAdmin = await khana.checkIfAdmin(alice);
         assert.equal(aliceIsAdmin, true, 'user should be an admin');
@@ -34,67 +33,63 @@ contract('KhanaToken', function(accounts) {
 
     it("should be able to award new tokens (as owner)", async () => {
         bobBalance += 10000000000000000000
-        await khana.award(bob, 10000000000000000000, "ipfsHash_placeholder", {from: owner});
-        const Awarded = await khana.LogAwarded();
-        const log = await new Promise ((resolve, reject) => {
-            Awarded.watch((error, log) => { resolve(log);});
+        let tx = await khana.award(bob, 10000000000000000000, "ipfsHash_placeholder", {from: owner});
+        truffleAssert.eventEmitted(tx, 'LogAwarded', (ev) => {
+            const expectedEventResult = {awardedTo: bob, minter: owner, amount: 10000000000000000000, ipfsHash: "ipfsHash_placeholder"};
+
+            const logAccountAddress = ev.awardedTo;
+            const logMinterAddress = ev.minter;
+            const logAmount = ev.amount.toString();
+            const logIpfsHash = ev.ipfsHash;
+
+            assert.equal(expectedEventResult.awardedTo, logAccountAddress, "Awarded event awardedTo property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.minter, logMinterAddress, "Awarded event minter property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.amount, logAmount, "Awarded event amount property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.ipfsHash, logIpfsHash, "Awarded event ipfsHash property not emitted correctly, check award method");
+            return true;
         });
 
-        const expectedEventResult = {awardedTo: bob, minter: owner, amount: 10000000000000000000, ipfsHash: "ipfsHash_placeholder"};
-
-        const logAccountAddress = log.args.awardedTo;
-        const logMinterAddress = log.args.minter;
-        const logAmount = log.args.amount.toNumber();
-        const logIpfsHash = log.args.ipfsHash;
-
-        assert.equal(expectedEventResult.awardedTo, logAccountAddress, "Awarded event awardedTo property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.minter, logMinterAddress, "Awarded event minter property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.amount, logAmount, "Awarded event amount property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.ipfsHash, logIpfsHash, "Awarded event ipfsHash property not emitted correctly, check award method");
     });
 
     it("should be able to award new tokens (as new admin)", async () => {
         bobBalance += 10000000000000000000
-        await khana.award(bob, 10000000000000000000, "ipfsHash_placeholder", {from: alice});
-        const Awarded = await khana.LogAwarded();
-        const log = await new Promise ((resolve, reject) => {
-            Awarded.watch((error, log) => { resolve(log);});
+        let tx = await khana.award(bob, 10000000000000000000, "ipfsHash_placeholder", {from: alice});
+        truffleAssert.eventEmitted(tx, 'LogAwarded', (ev) => {
+            const expectedEventResult = {awardedTo: bob, minter: alice, amount: 10000000000000000000, ipfsHash: "ipfsHash_placeholder"};
+
+            const logAccountAddress = ev.awardedTo;
+            const logMinterAddress = ev.minter;
+            const logAmount = ev.amount.toString();
+            const logIpfsHash = ev.ipfsHash;
+
+            assert.equal(expectedEventResult.awardedTo, logAccountAddress, "Awarded event awardedTo property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.minter, logMinterAddress, "Awarded event minter property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.amount, logAmount, "Awarded event amount property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.ipfsHash, logIpfsHash, "Awarded event ipfsHash property not emitted correctly, check award method");
+            return true;
         });
 
-        const expectedEventResult = {awardedTo: bob, minter: alice, amount: 10000000000000000000, ipfsHash: "ipfsHash_placeholder"};
 
-        const logAccountAddress = log.args.awardedTo;
-        const logMinterAddress = log.args.minter;
-        const logAmount = log.args.amount.toNumber();
-        const logIpfsHash = log.args.ipfsHash;
 
-        assert.equal(expectedEventResult.awardedTo, logAccountAddress, "Awarded event awardedTo property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.minter, logMinterAddress, "Awarded event minter property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.amount, logAmount, "Awarded event amount property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.ipfsHash, logIpfsHash, "Awarded event ipfsHash property not emitted correctly, check award method");
     });
 
     it("should be able to set new admin (as new admin)", async () => {
-        await khana.addAdmin(bob, {from: alice});
-        const AdminAdded = await khana.LogAdminAdded();
-        const log = await new Promise((resolve, reject) => {
-            AdminAdded.watch((error, log) => { resolve(log);});
+        let tx =  await khana.addAdmin(bob, {from: alice});
+        truffleAssert.eventEmitted(tx, 'LogAdminAdded', (ev) => {
+            assert.equal(ev.account, bob, "AdminAdded event account address incorrectly emitted");
+            return true;
         });
-
-        assert.equal(log.args.account, bob, "AdminAdded event account address incorrectly emitted");
 
         const bobIsAdmin = await khana.checkIfAdmin(bob);
         assert.equal(bobIsAdmin, true, 'user should be an admin');
     });
 
     it("should be able to remove admin (as new admin)", async () => {
-        await khana.removeAdmin(bob, {from: alice});
-        const AdminRemoved = await khana.LogAdminRemoved();
-        const log = await new Promise((resolve, reject) => {
-            AdminRemoved.watch((error, log) => { resolve(log);});
+        let tx =   await khana.removeAdmin(bob, {from: alice});
+        truffleAssert.eventEmitted(tx, 'LogAdminRemoved', (ev) => {
+            assert.equal(ev.account, bob, "AdminRemoved event account address incorrectly emitted");
+            return true;
         });
-
-        assert.equal(log.args.account, bob, "AdminRemoved event account address incorrectly emitted");
 
         const bobIsNotAdmin = await khana.checkIfAdmin(bob);
         assert.equal(bobIsNotAdmin, false, 'user should not be an admin');
@@ -111,13 +106,10 @@ contract('KhanaToken', function(accounts) {
     });
 
     it("should not be able to award any more tokens (emergency stop)", async () => {
-        await khana.emergencyStop({from: owner});
-        const ContractDisabled = await khana.LogContractDisabled();
-        const log = await new Promise((resolve, reject) => {
-            ContractDisabled.watch((error, log) => { resolve(log);});
-        });
-
-        assert.equal(log.event, 'LogContractDisabled', "Emergency stop event event incorrectly emitted");
+        let tx = await khana.emergencyStop({from: owner});
+        truffleAssert.eventEmitted(tx, 'LogContractDisabled', (ev) => {
+            return true;
+        }, "Emergency stop event event incorrectly emitted");
 
         // Try to award Bob tokens
 
@@ -156,130 +148,144 @@ contract('KhanaToken', function(accounts) {
     });
 
     it("should be able restore awarding of tokens (contract enabled)", async () => {
-        await khana.resumeContract({from: owner});
-        const ContractEnabled = await khana.LogContractEnabled();
-        const log = await new Promise((resolve, reject) => {
-            ContractEnabled.watch((error, log) => { resolve(log);});
-        });
-
-        assert.equal(log.event, 'LogContractEnabled', "Resume contract event incorrectly emitted");
+        let tx = await khana.resumeContract({from: owner});
+        truffleAssert.eventEmitted(tx, 'LogContractEnabled', (ev) => {
+            return true;
+        }, "Resume contract event incorrectly emitted");
 
         // Now award the tokens to Bob
 
         bobBalance += 10000000000000000000
-        await khana.award(bob, 10000000000000000000, "ipfsHash_placeholder", {from: owner});
-        const Awarded = await khana.LogAwarded();
-        const logAward = await new Promise ((resolve, reject) => {
-            Awarded.watch((error, log) => { resolve(log);});
+        let awardTx = await khana.award(bob, 10000000000000000000, "ipfsHash_placeholder", {from: owner});
+        truffleAssert.eventEmitted(awardTx, 'LogAwarded', (ev) => {
+            const expectedEventResult = {awardedTo: bob, minter: owner, amount: 10000000000000000000, ipfsHash: "ipfsHash_placeholder"};
+
+            const logAccountAddress = ev.awardedTo;
+            const logMinterAddress = ev.minter;
+            const logAmount = ev.amount.toString();
+            const logIpfsHash = ev.ipfsHash;
+
+            assert.equal(expectedEventResult.awardedTo, logAccountAddress, "Awarded event awardedTo property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.minter, logMinterAddress, "Awarded event minter property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.amount, logAmount, "Awarded event amount property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.ipfsHash, logIpfsHash, "Awarded event ipfsHash property not emitted correctly, check award method");
+            return true;
         });
 
-        const expectedEventResult = {awardedTo: bob, minter: owner, amount: 10000000000000000000, ipfsHash: "ipfsHash_placeholder"};
-
-        const logAccountAddress = logAward.args.awardedTo;
-        const logMinterAddress = logAward.args.minter;
-        const logAmount = logAward.args.amount.toNumber();
-        const logIpfsHash = logAward.args.ipfsHash;
-
-        assert.equal(expectedEventResult.awardedTo, logAccountAddress, "Awarded event awardedTo property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.minter, logMinterAddress, "Awarded event minter property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.amount, logAmount, "Awarded event amount property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.ipfsHash, logIpfsHash, "Awarded event ipfsHash property not emitted correctly, check award method");
     });
 
     it("should be able to fund bonding curve by sending ETH (contract enabled)", async () => {
-        await khana.resumeContract({from: owner});
-        const ContractEnabled = await khana.LogContractEnabled();
-        const log = await new Promise((resolve, reject) => {
-            ContractEnabled.watch((error, log) => { resolve(log);});
-        });
-
-        assert.equal(log.event, 'LogContractEnabled', "Resume contract event incorrectly emitted");
+        let tx = await khana.resumeContract({from: owner});
+        truffleAssert.eventEmitted(tx, 'LogContractEnabled', (ev) => {
+            return true;
+        }, "Resume contract event incorrectly emitted");
 
         // Fund the contract with 10 ETH (this should forward to the funding contract)
-        await khana.sendTransaction({from: owner, value: 10000000000000000000});
+        let fundingTx = await khana.sendTransaction({from: owner, value: 10000000000000000000});
 
         fundsContract = await BondingCurveFunds.deployed();
-        const tokenContractFunding = await fundsContract.LogFundingReceived();
-        const logs = await new Promise ((resolve, reject) => {
-            tokenContractFunding.watch((error, log) => { resolve(log);});
-        })
+
+        //event from 'nested' tx
+        let nestedFundingReceivedEvent = (await truffleAssert.createTransactionResult(fundsContract, fundingTx.tx)).logs[0].returnValues;
+
         const expectedEventResult = {account: khana.address, amount: 10000000000000000000};
 
-        const logAccountAddress = logs.args.account;
-        const logAmount = logs.args.amount;
+        const logAccountAddress = nestedFundingReceivedEvent.account;
+        const logAmount = nestedFundingReceivedEvent.amount;
 
         assert.equal(expectedEventResult.account, logAccountAddress, "Funding received event account property not emitted correctly, check award method");
         assert.equal(expectedEventResult.amount, logAmount, "Funding received event amount property not emitted correctly, check award method");
+
     });
 
     it("should be able to sell tokens (contract enabled)", async () => {
         fundsContract = await BondingCurveFunds.deployed();
 
         // Work out how much ETH we should get in return
-        const amountToSell = 10000000000000000000;
-        const totalSupply = (await khana.getSupply()).toNumber();
-        const ethInContract = web3.eth.getBalance(fundsContract.address);
-        const expectedEthReturn = (amountToSell / totalSupply) * (ethInContract * 0.5);
+        const amountToSell = new BN(web3.utils.toWei("1", "ether")); //=1 KHNA
+        const totalSupply = new BN(await khana.getSupply()); //=30 KHNA
+        const ethInContract = new BN(await web3.eth.getBalance(fundsContract.address)); //=X ETH
+
+        const multiplier = new BN(web3.utils.toWei("1", "ether")); //10*18
+
+        const stakeToSell = amountToSell.mul(multiplier).div(totalSupply); // = in 0.01 percents, 10*18 multiplied
+        const expectedEthReturn = stakeToSell.mul(ethInContract.div(new BN(2))).div(multiplier); //stake applied to a half of funds
 
         bobBalance -= amountToSell;
-        await khana.sell(amountToSell, {from: bob});
+        let sellTx = await khana.sell(amountToSell, {from: bob});
 
-        const Sell = await khana.LogSell();
-        const logSell = await new Promise ((resolve, reject) => {
-            Sell.watch((error, log) => { resolve(log);});
+        truffleAssert.eventEmitted(sellTx, 'LogSell', (ev) => {
+            const expectedEventResult = {sellingAccount: bob, sellAmount: amountToSell, ethReceived: expectedEthReturn.toString()};
+
+            const logSellingAccount = ev.sellingAccount;
+            const logSellAmount = ev.sellAmount.toString();
+            const logEthReturned = ev.ethReceived.toString();
+
+            assert.equal(expectedEventResult.sellingAccount, logSellingAccount, "Sell event sellingAccount property not emitted correctly, check Sell method");
+            assert.equal(expectedEventResult.sellAmount, logSellAmount, "Sell event sellAmount property not emitted correctly, check Sell method");
+            assert.equal(expectedEventResult.ethReceived, logEthReturned, "Sell event ethReceived property not emitted correctly, check Sell method");
+            return true;
         });
 
-        const expectedEventResult = {sellingAccount: bob, sellAmount: amountToSell, ethReceived: expectedEthReturn};
 
-        const logSellingAccount = logSell.args.sellingAccount;
-        const logSellAmount = logSell.args.sellAmount.toNumber();
-        const logEthReturned = logSell.args.ethReceived.toNumber();
-
-        assert.equal(expectedEventResult.sellingAccount, logSellingAccount, "Sell event sellingAccount property not emitted correctly, check Sell method");
-        assert.equal(expectedEventResult.sellAmount, logSellAmount, "Sell event sellAmount property not emitted correctly, check Sell method");
-        assert.equal(expectedEventResult.ethReceived, logEthReturned, "Sell event ethReceived property not emitted correctly, check Sell method");
     });
 
     it("should be able to remove admin (as owner)", async () => {
-        await khana.removeAdmin(alice, {from: owner});
-        const AdminRemoved = await khana.LogAdminRemoved();
-        const log = await new Promise((resolve, reject) => {
-            AdminRemoved.watch((error, log) => { resolve(log);});
+        let tx = await khana.removeAdmin(alice, {from: owner});
+        truffleAssert.eventEmitted(tx, 'LogAdminRemoved', (ev) => {
+            assert.equal(ev.account, alice, "AdminRemoved event account address incorrectly emitted");
+            return true;
         });
-
-        assert.equal(log.args.account, alice, "AdminRemoved event account address incorrectly emitted");
 
         const aliceIsNotAdmin = await khana.checkIfAdmin(alice);
         assert.equal(aliceIsNotAdmin, false, 'user should not be an admin');
     });
 
-    it("should be able to check supply accurately", async () => {
-        const supply = (await khana.getSupply()).toNumber();
-        const initialSupply = (await khana.INITIAL_SUPPLY()).toNumber();
-
-        const expectedSupply = bobBalance + initialSupply;
-        assert.equal(supply, expectedSupply, "token supply did not return the expected result");
-    });
-
     it("should be able to burn tokens (as owner)", async () => {
-        await khana.burn(bob, bobBalance, {from: owner});
+        let tx = await khana.burn(bob, bobBalance, {from: owner});
+        truffleAssert.eventEmitted(tx, 'LogBurned', (ev) => {
+            const expectedEventResult = { burnFrom: bob, amount: bobBalance }
 
-        const Burned = await khana.LogBurned();
-        const log = await new Promise((resolve, reject) => {
-            Burned.watch((error, log) => { resolve(log);});
+            const logBurnFromAddress = ev.burnFrom;
+            const logAmount = ev.amount.toString();
+
+            assert.equal(expectedEventResult.burnFrom, logBurnFromAddress, "Burn event from property not emitted correctly, check burn method");
+            assert.equal(expectedEventResult.amount, logAmount, "Burn event value property not emitted correctly, check burn method");
+            return true;
         });
 
-        const expectedEventResult = { burnFrom: bob, amount: bobBalance }
-
-        const logBurnFromAddress = log.args.burnFrom;
-        const logAmount = log.args.amount.toNumber();
-
-        assert.equal(expectedEventResult.burnFrom, logBurnFromAddress, "Burn event from property not emitted correctly, check burn method");
-        assert.equal(expectedEventResult.amount, logAmount, "Burn event value property not emitted correctly, check burn method");
 
         // balanceOf function is inherited from StandardToken.sol
-        const bobsNewBalance = (await khana.balanceOf(bob)).toNumber();
-        assert.equal(bobsNewBalance, 0, "user should not have any tokens remaining");
+        const bobsNewBalance = (await khana.balanceOf(bob)).toString();
+        assert.equal(bobsNewBalance, "0", "user should not have any tokens remaining");
+    });
+
+    it("should be able to award in a bulk", async () => {
+        let addresses = [];
+        let singleAwardsGas = 0;
+        const numAwards = 10;
+        for (i = 0; i < numAwards; i++) {
+            addresses.push(bob);
+            let tx = await khana.award(bob, web3.utils.toWei("10", "szabo"), "ipfsHash_placeholder");
+            let receipt = await web3.eth.getTransactionReceipt(tx.tx);
+            singleAwardsGas = singleAwardsGas + receipt.gasUsed;
+        }
+        let tx = await khana.awardBulk(addresses, web3.utils.toWei("10", "szabo"), "ipfsHash_placeholder");
+        let receipt = await web3.eth.getTransactionReceipt(tx.tx);
+        let bulkAwardsGas = receipt.gasUsed;
+        console.log(`Bulk is ${singleAwardsGas/bulkAwardsGas} times more gas-efficient for ${numAwards} awards`);
+
+        truffleAssert.eventNotEmitted(tx, 'LogBulkAwardedFailure');
+
+        truffleAssert.eventEmitted(tx, 'LogAwarded', (ev) => {
+            return true;
+        });
+
+        truffleAssert.eventEmitted(tx, 'LogBulkAwardedSummary', (ev) => {
+            assert.equal(numAwards, ev.bulkCount.toString(), "Hmm not everyone was awarded in bulk")
+            return true;
+        });
+
     });
 
 })

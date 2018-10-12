@@ -1,3 +1,5 @@
+const truffleAssert = require('truffle-assertions');
+const BN = web3.utils.BN;
 var BondingCurveFunds = artifacts.require("./BondingCurveFunds.sol");
 var KhanaToken = artifacts.require("./KhanaToken.sol");
 
@@ -40,32 +42,29 @@ contract('BondingCurveFunds', function(accounts) {
     });
 
     it("should be able to change 'token contract' (as owner)", async () => {
-        await fundsContract.setTokenContract(alice, {from: owner});
-        const tokenContractChanged = await fundsContract.LogTokenContractChanged();
-        const logs = await new Promise ((resolve, reject) => {
-            tokenContractChanged.watch((error, log) => { resolve(log);});
-        })
-
         khana = await KhanaToken.deployed();
-        const expectedEventResult = {fromAccount: owner, oldAddress: khana.address, newAddress: alice};
 
-        const logFromAccount = logs.args.fromAccount;
-        const logOldAddress = logs.args.oldAddress;
-        const logNewAddress = logs.args.newAddress;
+        let tx = await fundsContract.setTokenContract(alice, {from: owner});
+        truffleAssert.eventEmitted(tx, 'LogTokenContractChanged', (ev) => {
+            const expectedEventResult = {fromAccount: owner, oldAddress: khana.address, newAddress: alice};
 
-        assert.equal(expectedEventResult.fromAccount, logFromAccount, "LogTokenContractChanged event fromAccount property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.oldAddress, logOldAddress, "LogTokenContractChanged event oldAddress property not emitted correctly, check award method");
-        assert.equal(expectedEventResult.newAddress, logNewAddress, "LogTokenContractChanged event newAddress property not emitted correctly, check award method");
+            const logFromAccount = ev.fromAccount;
+            const logOldAddress = ev.oldAddress;
+            const logNewAddress = ev.newAddress;
+
+            assert.equal(expectedEventResult.fromAccount, logFromAccount, "LogTokenContractChanged event fromAccount property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.oldAddress, logOldAddress, "LogTokenContractChanged event oldAddress property not emitted correctly, check award method");
+            assert.equal(expectedEventResult.newAddress, logNewAddress, "LogTokenContractChanged event newAddress property not emitted correctly, check award method");
+            return true;
+        });
+
     });
 
     it("should not be able to change contract state (emergency stop)", async () => {
-        await fundsContract.emergencyStop({from: owner});
-        const ContractDisabled = await fundsContract.LogContractDisabled();
-        const log = await new Promise((resolve, reject) => {
-            ContractDisabled.watch((error, log) => { resolve(log);});
-        });
-
-        assert.equal(log.event, 'LogContractDisabled', "Emergency stop event event incorrectly emitted");
+        let tx = await fundsContract.emergencyStop({from: owner});
+        truffleAssert.eventEmitted(tx, 'LogContractDisabled', (ev) => {
+            return true;
+        }, "Emergency stop event event incorrectly emitted");
 
         // Try to change contract state
 
@@ -80,13 +79,10 @@ contract('BondingCurveFunds', function(accounts) {
     });
 
     it("should be able to change contract state (resume contract)", async () => {
-        await fundsContract.resumeContract({from: owner});
-        const ContractEnabled = await fundsContract.LogContractEnabled();
-        const log = await new Promise((resolve, reject) => {
-            ContractEnabled.watch((error, log) => { resolve(log);});
-        });
-
-        assert.equal(log.event, 'LogContractEnabled', "Contract enabling event incorrectly emitted");
+        let tx = await fundsContract.resumeContract({from: owner});
+        truffleAssert.eventEmitted(tx, 'LogContractEnabled', (ev) => {
+            return true;
+        }, "Contract enabling event incorrectly emitted");
 
         // Try to change contract state
         khana = await KhanaToken.deployed();
