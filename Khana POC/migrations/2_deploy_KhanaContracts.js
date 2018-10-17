@@ -24,6 +24,8 @@ module.exports = function(deployer, network, accounts) {
 
         // Truffle calls it 'develop', ganache calls it 'development'
         if (network == 'develop' || network == 'development' || network == 'test') {
+
+            console.log('\n************************************\nIf you are running tests and want to \nsee the results in terminal, follow \nthe instructions in truffle.js\n************************************\n')
             bondingFundsInstance.sendTransaction({from: accounts[9], value: web3.toWei(amountOfEthToFund, 'ether')}).then((result) => {
                 console.log('Funding contract bonding curve...')
                 console.log('  ... funded with ' + amountOfEthToFund + ' ETH successfully')
