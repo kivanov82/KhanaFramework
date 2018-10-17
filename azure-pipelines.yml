@@ -13,6 +13,10 @@ steps:
   displayName: 'Install Node.js'
 
 - script: |
+    cd Khana\ POC
+  displayName: 'Change to correct directory'
+  
+- script: |
     npm install
   displayName: 'npm install'
 
