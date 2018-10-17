@@ -20,5 +20,5 @@ steps:
 - script: |
     cd Khana\ POC
     npx truffle compile
-    npx truffle test
+    npx truffle test --network test
   displayName: 'truffle compile & test'
