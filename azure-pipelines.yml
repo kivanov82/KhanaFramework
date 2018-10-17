@@ -13,6 +13,12 @@ steps:
     versionSpec: '8.x'
   displayName: 'Install Node.js'
   
+- task: PublishTestResults@2
+  condition: always()
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '**/truffle-test-results.xml' 
+    
 - script: |
     cd Khana\ POC
     npm install
@@ -23,3 +29,5 @@ steps:
     npx truffle compile
     npx truffle test --network test
   displayName: 'truffle compile & test'
+  
+
