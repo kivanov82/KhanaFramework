@@ -241,6 +241,14 @@ contract('KhanaToken', function(accounts) {
         assert.equal(aliceIsNotAdmin, false, 'user should not be an admin');
     });
 
+    it("should be able to check supply accurately", async () => {
+        const supply = (await khana.getSupply()).toNumber();
+        const initialSupply = 0;
+
+        const expectedSupply = bobBalance + initialSupply;
+        assert.equal(supply, expectedSupply, "token supply did not return the expected result");
+    });
+
     it("should be able to burn tokens (as owner)", async () => {
         let tx = await khana.burn(bob, bobBalance, {from: owner});
         truffleAssert.eventEmitted(tx, 'LogBurned', (ev) => {
