@@ -8,7 +8,7 @@ This repo is the Proof of Concept, more info on Medium
 
 _Note: I'm not a web developer so this is the first time i've used React, forgive the messy front-end code._
 
-### What is Khana?
+## What is Khana?
 Khana is a framework for tokenized community building. It is a framework to incentivise the growth of a community, from communities which are just starting out, to large mature communities. This is not exclusive to online communities.
 
 ### How does it work?
@@ -33,7 +33,13 @@ One of the problems when building a community is how to incentivise participatio
 Due to the new minting of tokens, we create an 'inflation penalty' or tax for non-active members. For example, an early contributor may hold a large portion of the token supply early on, but if they are in-active, then their portion of the supply will reduce as more tokens are minted. This results in a dynamic which fairly rewards early contributors and at the same time, rewards new contributors with the expanding supply.
 A basic simulation of token dynamics can be found here: https://goo.gl/jeJkV5
 
-## How to setup
+# How to use the alpha
+1. Download a wallet app such as Coinbase Wallet or Status
+2. Use the dApp browser and go to: http://khana.io/app/
+3. Tweet at @daveytea to receive some KHNA tokens!
+4. Explore the app (features are quite limited at the moment...)
+
+# How to setup
 Requirements:
 * node
 * npm
@@ -64,7 +70,18 @@ Requirements:
 #### Running tests
 Navigate to the project directory and in terminal: `truffle test`
 
-## Misc
+# How to contribute
+
+#### Helping with the roadmap (and developing it)
+1. We work on the 'develop' branch, so switch to that.
+2. See the lowest number iteration project [here](https://github.com/mrdavey/KhanaFramework/projects), and use the board to find something you can help with
+
+#### Adding feature requests
+1. Read some of the existing issues already listed [here](https://github.com/mrdavey/KhanaFramework/issues)
+2. Use the same format of those issues to create a [new one](https://github.com/mrdavey/KhanaFramework/issues/new)
+
+
+# Misc
 * A discussion on Khana's [design pattern decisions here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/design_pattern_desicions.md)
 * A discussion on [avoiding common solidity attacks here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/avoiding_common_attacks.md)
 * Tests are [here](https://github.com/mrdavey/KhanaFramework/tree/master/Khana%20POC/test) and should be self explanatory
@@ -77,7 +94,7 @@ Navigate to the project directory and in terminal: `truffle test`
 
 😇🤗📈
 
-## Current deployments
+# Current deployments
 *subject to regular changes
 
 ### KhanaToken Rinkeby
@@ -98,3 +115,9 @@ This is a pilot project for the [BlockDam commmunity](https://www.meetup.com/Per
 
 [BondingCurve contract](https://rinkeby.etherscan.io/address/0x7b12642dfc0a675f2c6edc6515a2b5e6a1003972)
 
+# Contact
+Reach out to us on Twitter:
+
+[@daveytea](https://twitter.com/daveytea)
+
+[@adriana_truong](https://twitter.com/adriana_truong)
