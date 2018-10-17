@@ -255,7 +255,7 @@ contract('KhanaToken', function(accounts) {
 
     it("should be able to check supply accurately", async () => {
         const supply = (await khana.getSupply()).toNumber();
-        const initialSupply = (await khana.INITIAL_SUPPLY()).toNumber();
+        const initialSupply = 0;
 
         const expectedSupply = bobBalance + initialSupply;
         assert.equal(supply, expectedSupply, "token supply did not return the expected result");
