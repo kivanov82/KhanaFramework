@@ -14,5 +14,16 @@ module.exports = {
         network_id: 4,
         gas: 4700000
     }
+  },
+
+  // Comment out the following if you are running tests locally and need to see the result
+  // in terminal.
+  // We need this section when committing to Github to have test results shown properly with
+  // CI on Azure
+  mocha: {
+    reporter: "mocha-junit-reporter",
+    reporterOptions: {
+      mochaFile: 'truffle-test-results.xml'
+    }
   }
 };
