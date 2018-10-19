@@ -282,4 +282,29 @@ contract('KhanaToken', function(accounts) {
         assert.equal(bobsNewBalance, 0, "user should not have any tokens remaining");
     });
 
+    it("should be able to award in a bulk", async () => {
+        let addresses = [];
+        let singleAwardsGas = 0;
+        const numAwards = 10;
+        for (i = 0; i < numAwards; i++) {
+            addresses.push(bob);
+            let tx = await khana.award(bob, web3.toWei("10", "szabo"), "ipfsHash_placeholder");
+            let receipt = await web3.eth.getTransactionReceipt(tx.tx);
+            singleAwardsGas = singleAwardsGas + receipt.gasUsed;
+        }
+        let tx = await khana.awardBulk(addresses, web3.toWei("10", "szabo"), "ipfsHash_placeholder");
+        let receipt = await web3.eth.getTransactionReceipt(tx.tx);
+        let bulkAwardsGas = receipt.gasUsed;
+
+        //see how much bulk is more gas-efficient than single ones
+        //console.log(`Bulk is ${singleAwardsGas/bulkAwardsGas} times more gas-efficient for ${numAwards} awards`);
+
+        const BulkAwardedSummary = await khana.LogBulkAwardedSummary();
+        const logBulkAwardedSummary = await new Promise((resolve, reject) => {
+            BulkAwardedSummary.watch((error, log) => { resolve(log);});
+        });
+        assert.equal(numAwards, logBulkAwardedSummary.args.bulkCount, "Hmm not everyone was awarded in bulk")
+
+    });
+
 })

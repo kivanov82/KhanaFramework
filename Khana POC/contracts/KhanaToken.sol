@@ -17,12 +17,14 @@ import "./BondingCurveFunds.sol";
 contract KhanaToken is MintableToken {
     using SafeMath for uint256;
 
+    uint32  private constant BULK_AWARD_MAX_COUNT = 100;
+
     string public name = "KhanaToken";
     string public symbol = "KHNA";
     uint8 public decimals = 18;
 
     // Minimum ETH contract should have to enable bonding curve
-    uint public minimumEthBalance = 1000000000000000000;
+    uint public minimumEthBalance = 1 ether;
 
     bool public contractEnabled = true;
 
@@ -39,6 +41,12 @@ contract KhanaToken is MintableToken {
         address indexed minter,
         uint amount,
         string ipfsHash
+    );
+    event LogBulkAwardedFailure(
+        address failed
+    );
+    event LogBulkAwardedSummary(
+        uint bulkCount
     );
     event LogSell(
         address sellingAccount,
@@ -135,6 +143,52 @@ contract KhanaToken is MintableToken {
     {
         mint(_account, _amount);
         emit LogAwarded(_account, msg.sender, _amount, _ipfsHash);
+    }
+
+    /**
+     * @dev Does the same action as award() above but performs it as a bulk operation
+     * saving gas and improving the throughput.
+     * @notice There is an assumption here that the whole bulk of awards comes for a single reason,
+     * hence single amount and ipfs hash
+     * @notice This is not a 'transactional' award, meaning that if there is 'wrong' address
+     * among the ones provided, the whole award will still be successful
+     * Approach is inspired by HUMAN Protocol but having better record of failing awards
+     * @notice The length of accounts MUST be not higher than BULK_AWARD_MAX_COUNT
+     * @param _accounts The addresses of the users to awarded.
+     * @param _amount The amount to be awarded to each address.
+     * @param _ipfsHash The IPFS hash of the latest audit log, which includes the
+     * details and reason for the current awards of tokens.
+     */
+    function awardBulk(
+        address[] _accounts,
+        uint256 _amount,
+        string _ipfsHash
+    )
+        public
+        onlyAdmins
+        contractIsEnabled
+        returns (uint)
+    {
+        require(_amount > 0, "The rewarding amount is missing");
+        require(_accounts.length < BULK_AWARD_MAX_COUNT, "Too many accounts");
+        uint _bulkCount = 0;
+        for (uint i = 0; i < _accounts.length; ++i) {
+            bool _success = awardQuiet(_accounts[i], _amount, _ipfsHash);
+            if (_success) {
+                _bulkCount++;
+            } else {
+                emit LogBulkAwardedFailure(_accounts[i]);
+            }
+        }
+        emit LogBulkAwardedSummary(_bulkCount);
+        return _bulkCount;
+    }
+
+    function awardQuiet(address _account, uint256 _amount, string _ipfsHash) internal returns (bool) {
+        if (_account == address(0)) return false; // No awards for the black hole
+        if (_account == address(this)) return false; // No awards for this token
+        award(_account, _amount, _ipfsHash);
+        return true;
     }
 
     /**
